@@ -39,8 +39,22 @@ public class Events implements Listener {
 
 		if (openInventory.equals("worldViewer")) {
 			event.setCancelled(true);
+			int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
 			if (item == null || item.getType() == Material.AIR)
 				return;
+			if (event.getSlot() == event.getInventory().getSize() - 1 && item.getType() == Material.ARROW) {
+				PlayerManager.setInfo(player, "page", page+1);
+				player.openInventory(Utils.getWorldViewerGUI(player));
+				PlayerManager.setInfo(player, "openInventory", "worldViewer");
+				return;
+			}
+			if (event.getSlot() == event.getInventory().getSize() - 9 && item.getType() == Material.ARROW) {
+				PlayerManager.setInfo(player, "page", page-1);
+				player.openInventory(Utils.getWorldViewerGUI(player));
+				PlayerManager.setInfo(player, "openInventory", "worldViewer");
+				return;
+			}
+
 			World world = Bukkit.getWorld(ChatColor.stripColor(item.getItemMeta().getDisplayName()));
 			String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
 //			if (world == null) {
@@ -66,9 +80,9 @@ public class Events implements Listener {
 					MSG.tell(player, MSG.getString("Warning.Time", "this may take some time"));
 					world = Bukkit.createWorld(WorldCreator.name(name));
 					MSG.tell(player, MSG.getString("World.Loaded", "loaded %world%").replace("%world%", name));
+					PlayerManager.setInfo(player, "page", 0);
 					player.openInventory(Utils.getWorldViewerGUI(player));
 					PlayerManager.setInfo(player, "openInventory", "worldViewer");
-					PlayerManager.setInfo(player, "page", 0);
 					return;
 				}
 				if (player.getWorld().equals(world)) {
@@ -114,7 +128,6 @@ public class Events implements Listener {
 			}
 			player.openInventory(Utils.getWorldViewerGUI(player));
 			PlayerManager.setInfo(player, "openInventory", "worldViewer");
-			PlayerManager.setInfo(player, "page", 0);
 		}
 	}
 

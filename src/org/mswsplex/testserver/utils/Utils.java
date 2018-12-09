@@ -10,6 +10,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
+import org.bukkit.WorldType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
@@ -418,20 +419,24 @@ public class Utils {
 
 	public static Inventory getWorldViewerGUI(Player player) {
 		List<String> worlds = Utils.getUnloadedWorlds(true);
-		int size = (int) Math.min(Math.max((Math.ceil(Utils.getUnloadedWorlds(true).size() / 9.0) * 9), 9), 54);
+		int maxSize = 54;
+		int size = (int) Math.min(Math.max((Math.ceil(Utils.getUnloadedWorlds(true).size() / 9.0) * 9), 9), maxSize);
 		int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
 		Inventory inv = Bukkit.createInventory(null, size, "World Viewer");
-		//int pos = 0;
-		for (int i = page*54; i < size && i < Utils.getUnloadedWorlds(true).size(); i++) {
-			World world = Bukkit.getWorld(worlds.get(i));
-			String name = worlds.get(i);
+		int pos = (maxSize - 2) * page;
+		for (int i = 0; i < size && i + (page * (maxSize - 2)) + 1 <= Utils.getUnloadedWorlds(true).size(); i++) {
+			if (inv.getSize() == maxSize && (i == inv.getSize() - 9 || i == inv.getSize() - 1))
+				continue;
+			// MSG.log("i: " + i + " pos: " + pos);
+			World world = Bukkit.getWorld(worlds.get(pos));
+			String name = worlds.get(pos);
 			boolean loaded = world != null;
-
 			ItemStack item = new ItemStack(!loaded ? Material.STAINED_GLASS
-					: world.getEnvironment() == Environment.NORMAL ? Material.GRASS
-							: (world.getEnvironment() == Environment.NETHER ? Material.NETHERRACK
-									: Material.ENDER_STONE));
-
+					: world.getWorldType() == WorldType.FLAT ? Material.CARPET
+							: world.getEnvironment() == Environment.NORMAL ? Material.GRASS
+									: (world.getEnvironment() == Environment.NETHER ? Material.NETHERRACK
+											: Material.ENDER_STONE));
+			
 			if (loaded && world.equals(player.getWorld()))
 				item.addUnsafeEnchantment(Enchantment.ARROW_INFINITE, 1);
 
@@ -472,7 +477,23 @@ public class Utils {
 			meta.setLore(lore);
 			item.setItemMeta(meta);
 			inv.setItem(i, item);
-			//pos++;
+			pos++;
+		}
+
+		if (page * (maxSize - 2) + (maxSize - 2) < Utils.getUnloadedWorlds(true).size()) {
+			ItemStack nextArrow = new ItemStack(Material.ARROW);
+			ItemMeta meta = nextArrow.getItemMeta();
+			meta.setDisplayName(MSG.color("&a&lNext Page"));
+			nextArrow.setItemMeta(meta);
+			inv.setItem(inv.getSize() - 1, nextArrow);
+		}
+
+		if (page > 0) {
+			ItemStack lastArrow = new ItemStack(Material.ARROW);
+			ItemMeta lastMeta = lastArrow.getItemMeta();
+			lastMeta.setDisplayName(MSG.color("&c&lLast Page"));
+			lastArrow.setItemMeta(lastMeta);
+			inv.setItem(inv.getSize() - 9, lastArrow);
 		}
 
 		return inv;
