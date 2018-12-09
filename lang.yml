@@ -1,0 +1,28 @@
+NoPermission: '%prefix% You do not have permission to do this.'
+Warning:
+  Time: '&4&l[WARNING] &cThis may take some time.'
+  Confirm: '&a&l[CONFIRM] &aType /confirm to confirm this action.'
+  LargeChange: '&4&l[WARNING] &cThis action will affect &4%blocks% &cblocks.'
+Unknown:
+  Number: '&cInvalid Number.'
+  Blocks:
+    Message: '&4&l[WARNING] &cUnknown Block%s%: &e%blocks%'
+    Separator: '&7, &e'
+  Confirm: '&cYou do not have a confirmable command.'
+Unable:
+  Delete: '&4&l[ERROR] &cUnable to delete this world. Reason: &e%reason%'
+  Unload: '&4&l[ERROR] &cUnable to unload this world. Reason: &e%reason%'
+  Kick: '&4&l[ERROR] &cUnable to kick players. Reason: &e%reason%'
+World:
+  Generating:
+    Layers: '&c&l[INFO] &7Generating &e%name%&7 with &a%layers%&7 layer%s%.'
+    Other: '&c&l[INFO] &7Generating &e%name%&7 with &e%type%&7 preset.'
+  Filled: '%amo% block%s% filled'
+  Kicked: '&7&l[INFO] Successfully kicked &e%amo% &7player%s% to your world.'
+  Deleting: '&c&l[START] &7Deleting &e%world% &7world.'
+  Deleted: '&a&l[COMPLETE] &7Successfully deleted &e%world%&7.'
+  Unloading: '&c&l[START] &7Unloading &e%world% &7world.'
+  Unloaded: '&a&l[COMPLETE] &7Successfully unloaded &e%world%&7.'
+  Loading: '&c&l[START] &7Loading &e%world% &7world.'
+  Loaded: '&a&l[COMPLETE] &7Succesfully loaded &e%world%&7.'
+  

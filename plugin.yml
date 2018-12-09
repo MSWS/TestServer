@@ -1,0 +1,17 @@
+name: TestServer
+main: org.mswsplex.testserver.msws.Main
+version: 1.0
+description: Test Server Management
+commands:
+   test:
+      usage: /<command>
+      description: Main Test Command
+   testworld:
+      usage: /<command> <Type/WorldName>
+      description: Create a test world or teleport to one
+   confirm:
+      usage: /<command>
+      description: Confirms a pending command
+   fill:
+      usage: /<command>
+      description: Vanilla MC Command but with better autotab
