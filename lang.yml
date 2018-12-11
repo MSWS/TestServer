@@ -28,4 +28,10 @@ World:
   Unloaded: '&a&l[COMPLETE] &7Successfully unloaded &e%world%&7.'
   Loading: '&c&l[START] &7Loading &e%world% &7world.'
   Loaded: '&a&l[COMPLETE] &7Succesfully loaded &e%world%&7.'
-  
+Forcefield:
+  Missing: '&cYou do not have an active forcefield.'
+  Disabled: '&cYou disabled your forcefield.'
+  Enabled: '&7You now have an active forcefield of &e%size%&7 block%s%.'
+  Info:
+    Active: '&7Your current forcefield is set to &e%size% &7block%s%. Use &e/forcefield 0&7 to disable it.'
+    Disabled: '&7Your forcefield is inactive.'

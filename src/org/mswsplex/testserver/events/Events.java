@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -17,7 +18,9 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 import org.mswsplex.testserver.managers.PlayerManager;
 import org.mswsplex.testserver.msws.Main;
 import org.mswsplex.testserver.utils.MSG;
@@ -36,10 +39,8 @@ public class Events implements Listener {
 		Player player = (Player) event.getWhoClicked();
 		String openInventory = PlayerManager.getString(player, "openInventory");
 		ItemStack item = event.getCurrentItem();
-
 		if (openInventory == null)
 			return;
-
 		if (openInventory.equals("gameruleViewer")) {
 			event.setCancelled(true);
 			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
@@ -67,14 +68,18 @@ public class Events implements Listener {
 				PlayerManager.setInfo(player, "page", page + 1);
 				player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
 				PlayerManager.setInfo(player, "openInventory", "entityViewer");
+				player.playSound(player.getLocation(), Sound.CLICK, 1, 1);
 				return;
 			}
 			if (event.getSlot() == event.getInventory().getSize() - 9 && item.getType() == Material.ARROW) {
 				PlayerManager.setInfo(player, "page", page - 1);
 				player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
 				PlayerManager.setInfo(player, "openInventory", "entityViewer");
+				player.playSound(player.getLocation(), Sound.CLICK, 1, .75f);
 				return;
 			}
+			if(!item.hasItemMeta()||!item.getItemMeta().hasLore())
+				return;
 			String uuid = ChatColor.stripColor(item.getItemMeta().getLore().get(0));
 			Entity ent = null;
 			for (Entity e : world.getEntities()) {
@@ -86,9 +91,9 @@ public class Events implements Listener {
 			if (ent == null) {
 				MSG.tell(player, MSG.getString("Unable.Entity", "Unable to manage that entity, reason: %reason%")
 						.replace("%reason%", "Entity not found"));
+				player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 				return;
 			}
-
 			if (event.getClick() == ClickType.LEFT) {
 				player.teleport(ent);
 				return;
@@ -103,6 +108,7 @@ public class Events implements Listener {
 				} else {
 					ent.remove();
 				}
+				player.playSound(player.getLocation(), Sound.GHAST_DEATH, 2, 1f);
 			}
 			if (event.getClick() == ClickType.SHIFT_RIGHT) {
 				for (Entity e : world.getEntitiesByClass(ent.getClass())) {
@@ -112,12 +118,13 @@ public class Events implements Listener {
 						e.remove();
 					}
 				}
+				player.playSound(player.getLocation(), Sound.BAT_HURT, .5f, .1f);
+
 			}
 			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 				player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
 				PlayerManager.setInfo(player, "openInventory", "entityViewer");
 			}, 2);
-
 			return;
 		}
 		if (openInventory.equals("worldViewer")) {
@@ -137,19 +144,21 @@ public class Events implements Listener {
 				PlayerManager.setInfo(player, "openInventory", "worldViewer");
 				return;
 			}
-
+			if(!item.hasItemMeta()||!item.getItemMeta().hasDisplayName())
+				return;
 			World world = Bukkit.getWorld(ChatColor.stripColor(item.getItemMeta().getDisplayName()));
 			String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
-
 			if (event.getClick() == ClickType.SHIFT_LEFT) {
 				if (world != null && Utils.isPriorityWorld(world)) {
 					MSG.tell(player, MSG.getString("Unable.Unload", "Unable to unload world, reason: %reason%")
 							.replace("%reason%", "Priority World"));
+					player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 					return;
 				}
 				if (world.getPlayers().size() > 0) {
 					MSG.tell(player, MSG.getString("Unable.Unload", "Unable to unload world, reason: %reason%")
 							.replace("%reason%", "Players in world"));
+					player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 					return;
 				}
 				MSG.tell(player, MSG.getString("World.Unloading", "unloading %world%").replace("%world%", name));
@@ -194,11 +203,13 @@ public class Events implements Listener {
 					if (world != null && Utils.isPriorityWorld(world)) {
 						MSG.tell(player, MSG.getString("Unable.Unload", "Unable to unload world, reason: %reason%")
 								.replace("%reason%", "Priority World"));
+						player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 						return;
 					}
 					if (world.getPlayers().size() > 0) {
 						MSG.tell(player, MSG.getString("Unable.Delete", "Unable to delete world, reason: %reason%")
 								.replace("%reason%", "Players in world"));
+						player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 						return;
 					}
 					MSG.tell(player, MSG.getString("World.Unloading", "unloading %world%").replace("%world%", name));
@@ -212,11 +223,13 @@ public class Events implements Listener {
 				if (world == null || world.getPlayers().size() == 0) {
 					MSG.tell(player, MSG.getString("Unable.Kick", "Unable to kick players, reason: %reason%")
 							.replace("%reason%", "No Players in World"));
+					player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 					return;
 				}
 				if (world.equals(player.getWorld())) {
 					MSG.tell(player, MSG.getString("Unable.Kick", "Unable to kick players, reason: %reason%")
 							.replace("%reason%", "You must be in a different world"));
+					player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 					return;
 				}
 				int amo = world.getPlayers().size();
@@ -246,5 +259,21 @@ public class Events implements Listener {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 			PlayerManager.setInfo(player, "confirmed", null);
 		}, 1);
+	}
+
+	@EventHandler
+	public void onMove(PlayerMoveEvent event) {
+		Player player = event.getPlayer();
+		if (PlayerManager.getInfo(player, "forcefield") == null)
+			return;
+		float size = Float.parseFloat(PlayerManager.getString(player, "forcefield"));
+		for (Entity ent : player.getNearbyEntities(size, size, size)) {
+			if (!(ent instanceof LivingEntity) || ent instanceof ArmorStand)
+				continue;
+			LivingEntity lent = (LivingEntity) ent;
+			lent.setVelocity((ent.getLocation().toVector().subtract(player.getLocation().toVector())
+					.divide(new Vector(size/2.5, size/2.5, size/2.5)).setY(size/10)));
+			lent.getWorld().playSound(lent.getLocation(), Sound.CHICKEN_EGG_POP, 2, .1f);
+		}
 	}
 }

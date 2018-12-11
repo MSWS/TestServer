@@ -18,3 +18,6 @@ commands:
    gamerules:
       usage: /<command> <World>
       description: View all gamerules of the world
+   forcefield:
+      usage: /<command> <Size>
+      description: Toggle forcefield

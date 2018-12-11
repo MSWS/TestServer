@@ -14,7 +14,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.mswsplex.testserver.msws.Main;
 import org.mswsplex.testserver.utils.MSG;
 
-
 public class PlayerManager {
 	public static Main plugin;
 
@@ -115,13 +114,12 @@ public class PlayerManager {
 	/**
 	 * Get whether an object is saveable in YAML
 	 * 
-	 * @param obj
-	 *            Object type to test
+	 * @param obj Object type to test
 	 * @return True if saveable, false otherwise
 	 */
 	public static boolean isSaveable(Object obj) {
 		return (obj instanceof String || obj instanceof Integer || obj instanceof ArrayList || obj instanceof Boolean
 				|| obj == null || obj instanceof Double || obj instanceof Short || obj instanceof Long
-				|| obj instanceof Character);
+				|| obj instanceof Character || obj instanceof Float);
 	}
 }

@@ -3,6 +3,7 @@ package org.mswsplex.testserver.utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -427,8 +428,14 @@ public class Utils {
 	@SuppressWarnings("deprecation")
 	public static Inventory getEntityViewerGUI(Player player, World world) {
 		List<Entity> entities = world.getEntities();
+		Iterator<Entity> it = entities.iterator();
+		while (it.hasNext()) {
+			Entity ent = it.next();
+			if (ent instanceof LivingEntity && ((LivingEntity) ent).getHealth() <= 0)
+				it.remove();
+		}
 		int maxSize = 54;
-		int size = (int) Math.min(Math.max((Math.ceil(Utils.getUnloadedWorlds(true).size() / 9.0) * 9), 9), maxSize);
+		int size = (int) Math.min(Math.max((Math.ceil(world.getEntities().size() / 9.0) * 9), 9), maxSize);
 		int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
 		Inventory inv = Bukkit.createInventory(null, size, "Entities Viewer");
 		int pos = (maxSize - 2) * page;
@@ -438,8 +445,6 @@ public class Utils {
 			ItemStack item = new ItemStack(Material.MONSTER_EGG);
 			Entity ent = entities.get(pos);
 			String prefix = "&9&l", suffix = "", type = "Unknown";
-			if (ent instanceof LivingEntity && ((LivingEntity) ent).getHealth() <= 0)
-				continue;
 			if (ent instanceof Player) {
 				item.setType(Material.SKULL_ITEM);
 				item.setDurability((short) 3);
@@ -481,11 +486,14 @@ public class Utils {
 			if (ent.getCustomName() != null)
 				suffix = " (" + ent.getCustomName() + ")";
 			meta.setDisplayName(MSG.color(prefix + MSG.camelCase(ent.getType() + "")) + suffix);
-			if (ent.getName().contains(".")) {
-				meta.setDisplayName(MSG.color(
-						prefix + MSG.camelCase(ent.getName().split("\\.")[ent.getName().split("\\.").length - 1]))
-						+ suffix);
+			if(ent instanceof Item) {
+				meta.setDisplayName(MSG.color(prefix + MSG.camelCase(((Item)ent).getItemStack().getType() + "")) + suffix);
 			}
+//			if ((ent.getType()+"").contains(".")) {
+//				meta.setDisplayName(MSG.color(
+//						prefix + MSG.camelCase(ent.getName().split("\\.")[ent.getName().split("\\.").length - 1]))
+//						+ suffix);
+//			}
 			List<String> lore = new ArrayList<>();
 			lore.add(MSG.color("&8" + ent.getUniqueId()));
 			lore.add(MSG.color("&8Type: &7" + type + ""));
@@ -559,6 +567,10 @@ public class Utils {
 			return Material.COMMAND_MINECART;
 		case ("splash_potion"):
 			return Material.POTION;
+		case("ender_crystal"):
+			return Material.EYE_OF_ENDER;
+		case("experience_orb"):
+			return Material.EXP_BOTTLE;
 		default:
 			MSG.log("Unknown Entity: " + type);
 			return Material.BARRIER;
