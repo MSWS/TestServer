@@ -58,13 +58,24 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 				return true;
 			}
 			player = (Player) sender;
-			PlayerManager.setInfo(player, "openInventory", "worldViewer");
 			PlayerManager.setInfo(player, "page", 0);
 			player.openInventory(Utils.getWorldViewerGUI(player));
+			PlayerManager.setInfo(player, "openInventory", "worldViewer");
+			break;
+		case "entities":
+			if (!(sender instanceof Player)) {
+				MSG.tell(sender, "You must be a player.");
+				return true;
+			}
+			player = (Player) sender;
+			PlayerManager.setInfo(player, "page", 0);
+			player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
+			PlayerManager.setInfo(player, "openInventory", "entityViewer");
+			PlayerManager.setInfo(player, "managingWorld", player.getWorld().getName());
 			break;
 		case "unloaded":
 			MSG.tell(sender, Bukkit.getWorldContainer().toPath() + "");
-			for(String res:Utils.getUnloadedWorlds(false))
+			for (String res : Utils.getUnloadedWorlds(false))
 				MSG.tell(sender, res);
 			break;
 		default:
@@ -75,7 +86,7 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 
 	public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
 		List<String> result = new ArrayList<>();
-		for (String res : new String[] { "worlds" }) {
+		for (String res : new String[] { "worlds", "entities" }) {
 			if (args.length <= 1 && res.toLowerCase().startsWith(args[0].toLowerCase())) {
 				result.add(res);
 			}

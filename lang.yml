@@ -13,6 +13,9 @@ Unable:
   Delete: '&4&l[ERROR] &cUnable to delete this world. Reason: &e%reason%'
   Unload: '&4&l[ERROR] &cUnable to unload this world. Reason: &e%reason%'
   Kick: '&4&l[ERROR] &cUnable to kick players. Reason: &e%reason%'
+  Teleport: '&4&l[ERROR] &cUnable to enter world. Reason: &e%reason%'
+  Gamerule: '&4&l[ERROR] &cUnable to retrieve gamerules. Reason: &e%reason%'
+  Entity: '&4&l[ERROR] &cUnable to manage that entity. Reason: &e%reason%'
 World:
   Generating:
     Layers: '&c&l[INFO] &7Generating &e%name%&7 with &a%layers%&7 layer%s%.'

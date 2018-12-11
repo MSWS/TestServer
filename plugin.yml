@@ -15,3 +15,6 @@ commands:
    fill:
       usage: /<command>
       description: Vanilla MC Command but with better autotab
+   gamerules:
+      usage: /<command> <World>
+      description: View all gamerules of the world

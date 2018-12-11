@@ -7,6 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mswsplex.testserver.commands.ConfirmCommand;
 import org.mswsplex.testserver.commands.FillCommand;
+import org.mswsplex.testserver.commands.GamerulesCommand;
 import org.mswsplex.testserver.commands.TestCommand;
 import org.mswsplex.testserver.commands.TestworldCommand;
 import org.mswsplex.testserver.events.Events;
@@ -34,6 +35,7 @@ public class Main extends JavaPlugin {
 		new TestworldCommand(this);
 		new ConfirmCommand(this);
 		new FillCommand(this);
+		new GamerulesCommand(this);
 		
 		new Events(this);
 		MSG.plugin = this;

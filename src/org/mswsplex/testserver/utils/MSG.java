@@ -13,7 +13,7 @@ import org.mswsplex.testserver.msws.Main;
 
 public class MSG {
 	public static Main plugin;
-	
+
 	/**
 	 * Returns the string with &'s being §
 	 * 
@@ -171,8 +171,7 @@ public class MSG {
 			return;
 		}
 		int length = plugin.config.getInt("HelpLength");
-		List<String> help = plugin.lang.getStringList("Help." + command.toLowerCase()),
-				list = new ArrayList<String>();
+		List<String> help = plugin.lang.getStringList("Help." + command.toLowerCase()), list = new ArrayList<String>();
 		for (String res : help) {
 			if (res.startsWith("perm:")) {
 				String perm = "";
@@ -261,7 +260,7 @@ public class MSG {
 	public static String parseDecimal(double decimal, int length) {
 		return parseDecimal(decimal + "", length);
 	}
-	
+
 	public static String genUUID(int length) {
 		String[] keys = new String[100];
 		int pos = 0;

@@ -2,9 +2,11 @@ package org.mswsplex.testserver.utils;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
@@ -15,6 +17,11 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
@@ -417,6 +424,147 @@ public class Utils {
 		return false;
 	}
 
+	@SuppressWarnings("deprecation")
+	public static Inventory getEntityViewerGUI(Player player, World world) {
+		List<Entity> entities = world.getEntities();
+		int maxSize = 54;
+		int size = (int) Math.min(Math.max((Math.ceil(Utils.getUnloadedWorlds(true).size() / 9.0) * 9), 9), maxSize);
+		int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
+		Inventory inv = Bukkit.createInventory(null, size, "Entities Viewer");
+		int pos = (maxSize - 2) * page;
+		for (int i = 0; i < size && i + (page * (maxSize - 2)) + 1 <= entities.size(); i++) {
+			if (inv.getSize() == maxSize && (i == inv.getSize() - 9 || i == inv.getSize() - 1))
+				continue;
+			ItemStack item = new ItemStack(Material.MONSTER_EGG);
+			Entity ent = entities.get(pos);
+			String prefix = "&9&l", suffix = "", type = "Unknown";
+			if (ent instanceof LivingEntity && ((LivingEntity) ent).getHealth() <= 0)
+				continue;
+			if (ent instanceof Player) {
+				item.setType(Material.SKULL_ITEM);
+				item.setDurability((short) 3);
+				SkullMeta meta = (SkullMeta) item.getItemMeta();
+				meta.setOwner(ent.getName());
+				item.setItemMeta(meta);
+				suffix = " (" + ent.getName() + ")";
+				prefix = "&6&l";
+				type = "Player";
+			} else if (ent instanceof LivingEntity && ent.getType() != EntityType.ARMOR_STAND) {
+				try {
+					item.setDurability((short) ent.getType().getTypeId());
+					prefix = "&a&l";
+					type = "Living Entity";
+				} catch (IllegalArgumentException ee) {
+				}
+			} else if (ent instanceof Item) {
+				item.setType(((Item) ent).getItemStack().getType());
+				item.setAmount(((Item) ent).getItemStack().getAmount());
+				suffix = " (Item)";
+				prefix = "&7&l";
+				type = "Dropped Item";
+			} else if (ent instanceof FallingBlock) {
+				item.setType(((FallingBlock) ent).getMaterial());
+				type = "Falling Block";
+				prefix = "&8&l";
+			} else {
+				try {
+					item.setType(Material.valueOf(ent.getType() + ""));
+					prefix = "&b&l";
+					type = "Miscellaneous";
+				} catch (Exception e) {
+					item.setType(entityToMat(ent.getType()));
+					prefix = "&e&l";
+					type = "Entity";
+				}
+			}
+			ItemMeta meta = item.getItemMeta();
+			if (ent.getCustomName() != null)
+				suffix = " (" + ent.getCustomName() + ")";
+			meta.setDisplayName(MSG.color(prefix + MSG.camelCase(ent.getType() + "")) + suffix);
+			if (ent.getName().contains(".")) {
+				meta.setDisplayName(MSG.color(
+						prefix + MSG.camelCase(ent.getName().split("\\.")[ent.getName().split("\\.").length - 1]))
+						+ suffix);
+			}
+			List<String> lore = new ArrayList<>();
+			lore.add(MSG.color("&8" + ent.getUniqueId()));
+			lore.add(MSG.color("&8Type: &7" + type + ""));
+			lore.add("");
+			if (ent.getCustomName() != null)
+				lore.add(MSG.color("&6Custom Name: &e" + ent.getCustomName()));
+			lore.add(MSG
+					.color("&7Distance: &e" + MSG.parseDecimal(ent.getLocation().distance(player.getLocation()), 2)));
+			lore.add(MSG.color("&7X: &e" + ent.getLocation().getBlockX() + " &7Y: &e" + ent.getLocation().getBlockY()
+					+ " &7Z: &e" + ent.getLocation().getBlockZ()));
+			if (ent instanceof LivingEntity) {
+				lore.add("");
+				lore.add(MSG.color("&7Health: &e" + ((LivingEntity) ent).getHealth() + "&7/&e"
+						+ ((LivingEntity) ent).getMaxHealth()));
+			}
+
+			if (ent instanceof Player) {
+				GameMode mode = ((Player) ent).getGameMode();
+				lore.add(MSG.color("&7Gamemode: &e" + MSG.camelCase(mode.toString())));
+				if (mode == GameMode.SURVIVAL || mode == GameMode.ADVENTURE)
+					lore.add(MSG.color("&7Food Level: &e" + ((Player) ent).getFoodLevel()));
+				lore.add(MSG.color("&7Is Flying | Can Fly: &e" + MSG.TorF(player.isFlying()) + "&7 | "
+						+ MSG.TorF(player.getAllowFlight())));
+				lore.add(MSG.color("&7IP: &a" + player.getAddress().getHostName()));
+
+			}
+
+			lore.add("");
+
+			lore.add(MSG.color("&e&lLeft-Click &eto teleport to"));
+			lore.add(MSG.color("&e&lShift-Left &eClick to teleport to you"));
+			lore.add(MSG.color("&e&lRight-Click &eto kill"));
+			lore.add(MSG.color("&e&lShift-Right &eClick to kill all"));
+
+			meta.setLore(lore);
+			item.setItemMeta(meta);
+			inv.setItem(i, item);
+			pos++;
+		}
+
+		if (page * (maxSize - 2) + (maxSize - 2) < entities.size()) {
+			ItemStack nextArrow = new ItemStack(Material.ARROW);
+			ItemMeta meta = nextArrow.getItemMeta();
+			meta.setDisplayName(MSG.color("&a&lNext Page"));
+			nextArrow.setItemMeta(meta);
+			inv.setItem(inv.getSize() - 1, nextArrow);
+		}
+
+		if (page > 0) {
+			ItemStack lastArrow = new ItemStack(Material.ARROW);
+			ItemMeta lastMeta = lastArrow.getItemMeta();
+			lastMeta.setDisplayName(MSG.color("&c&lLast Page"));
+			lastArrow.setItemMeta(lastMeta);
+			inv.setItem(inv.getSize() - 9, lastArrow);
+		}
+
+		return inv;
+	}
+
+	private static Material entityToMat(EntityType type) {
+		switch (type.toString().toLowerCase()) {
+		case ("minecart_chest"):
+			return Material.STORAGE_MINECART;
+		case ("minecart_furnace"):
+			return Material.POWERED_MINECART;
+		case ("minecart_hopper"):
+			return Material.HOPPER_MINECART;
+		case ("minecart_tnt"):
+			return Material.EXPLOSIVE_MINECART;
+		case ("minecart_command"):
+			return Material.COMMAND_MINECART;
+		case ("splash_potion"):
+			return Material.POTION;
+		default:
+			MSG.log("Unknown Entity: " + type);
+			return Material.BARRIER;
+		}
+	}
+
 	public static Inventory getWorldViewerGUI(Player player) {
 		List<String> worlds = Utils.getUnloadedWorlds(true);
 		int maxSize = 54;
@@ -424,19 +572,22 @@ public class Utils {
 		int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
 		Inventory inv = Bukkit.createInventory(null, size, "World Viewer");
 		int pos = (maxSize - 2) * page;
-		for (int i = 0; i < size && i + (page * (maxSize - 2)) + 1 <= Utils.getUnloadedWorlds(true).size(); i++) {
+		for (int i = 0; i < size && i + (page * (maxSize - 2)) + 1 <= worlds.size(); i++) {
 			if (inv.getSize() == maxSize && (i == inv.getSize() - 9 || i == inv.getSize() - 1))
 				continue;
 			// MSG.log("i: " + i + " pos: " + pos);
 			World world = Bukkit.getWorld(worlds.get(pos));
 			String name = worlds.get(pos);
 			boolean loaded = world != null;
-			ItemStack item = new ItemStack(!loaded ? Material.STAINED_GLASS
-					: world.getWorldType() == WorldType.FLAT ? Material.CARPET
-							: world.getEnvironment() == Environment.NORMAL ? Material.GRASS
-									: (world.getEnvironment() == Environment.NETHER ? Material.NETHERRACK
-											: Material.ENDER_STONE));
-			
+			ItemStack item = new ItemStack(
+					!loaded ? Material.STAINED_GLASS
+							: world.getWorldType() == WorldType.FLAT ? Material.STEP
+									: world.getWorldType() == WorldType.AMPLIFIED ? Material.DIRT
+											: world.getEnvironment() == Environment.NORMAL ? Material.GRASS
+													: world.getEnvironment() == Environment.NETHER ? Material.NETHERRACK
+															: Material.ENDER_STONE,
+					world == null ? 1 : Math.max(1, world.getPlayers().size()));
+
 			if (loaded && world.equals(player.getWorld()))
 				item.addUnsafeEnchantment(Enchantment.ARROW_INFINITE, 1);
 
@@ -455,11 +606,23 @@ public class Utils {
 				lore.add(MSG.color("&7Loaded Chunks: &e" + world.getLoadedChunks().length));
 				lore.add(MSG.color("&7Seed: &a" + world.getSeed()));
 				lore.add(MSG.color("&7Difficulty: &b" + MSG.camelCase(world.getDifficulty().toString())));
+				lore.add(MSG.color("&7World Type: &b" + MSG.camelCase(
+						(world.getEnvironment() != Environment.NORMAL ? world.getEnvironment() : world.getWorldType())
+								+ "")));
 				lore.add(MSG.color(""));
 
-				lore.add(MSG.color("&eShift-Left Click to Unload"));
-				lore.add(MSG.color("&eShift-Right Click to &cDelete"));
-				lore.add(MSG.color("&e[Q] Kick Players in this world to yours"));
+				if (isPriorityWorld(world)) {
+					lore.add(MSG.color("&e&lMiddle-Click &eto view gamerules"));
+					lore.add(MSG.color("&e&l[Q] &eKick Players in this world to yours"));
+					lore.add(MSG.color(""));
+					lore.add(MSG.color("&d&lThis is a priority world"));
+					lore.add(MSG.color("&dYou cannot unload or delete this world"));
+				} else {
+					lore.add(MSG.color("&e&lMiddle-Click &eto view gamerules"));
+					lore.add(MSG.color("&e&lShift-Left Click to &c&lUnload"));
+					lore.add(MSG.color("&e&lShift-Right Click to &4&lDelete"));
+					lore.add(MSG.color("&e&l[Q] &eKick Players in this world to yours"));
+				}
 
 				lore.add(MSG.color(""));
 
@@ -469,18 +632,17 @@ public class Utils {
 				lore.add(MSG.color("&8Unloaded"));
 				lore.add(MSG.color(""));
 
-				lore.add(MSG.color("&eLeft Click to &aLoad"));
-				lore.add(MSG.color("&eShift-Right Click to &cDelete"));
-
-				lore.add(MSG.color(""));
+				lore.add(MSG.color("&e&lLeft Click &eto &a&lLoad"));
+				lore.add(MSG.color("&e&lShift-Right Click &eto &4&lDelete"));
 			}
+
 			meta.setLore(lore);
 			item.setItemMeta(meta);
 			inv.setItem(i, item);
 			pos++;
 		}
 
-		if (page * (maxSize - 2) + (maxSize - 2) < Utils.getUnloadedWorlds(true).size()) {
+		if (page * (maxSize - 2) + (maxSize - 2) < worlds.size()) {
 			ItemStack nextArrow = new ItemStack(Material.ARROW);
 			ItemMeta meta = nextArrow.getItemMeta();
 			meta.setDisplayName(MSG.color("&a&lNext Page"));
@@ -495,8 +657,66 @@ public class Utils {
 			lastArrow.setItemMeta(lastMeta);
 			inv.setItem(inv.getSize() - 9, lastArrow);
 		}
-
 		return inv;
+	}
+
+	public static Inventory getGameruleGUI(Player player, World world) {
+		int size = (int) Math.min(Math.max((Math.ceil(world.getGameRules().length / 9.0) * 9), 9), 54);
+		Inventory inv = Bukkit.createInventory(null, size, world.getName() + " Gamerules");
+		int slot = 0;
+		for (String res : world.getGameRules()) {
+			String val = world.getGameRuleValue(res), result = "&e" + val;
+			ItemStack item = new ItemStack(getGameruleIcon(res), val.equalsIgnoreCase("true") ? 2 : 1);
+			ItemMeta meta = item.getItemMeta();
+			meta.setDisplayName(MSG.color("&a&l" + res));
+			if (val.equalsIgnoreCase("true") || val.equalsIgnoreCase("false")) {
+				result = MSG.TorF(Boolean.parseBoolean(val));
+				meta.setLore(Arrays.asList("", MSG.color(result), "", MSG.color("&e&lClick to toggle")));
+			} else {
+				meta.setLore(Arrays.asList("", MSG.color(result)));
+			}
+			item.setItemMeta(meta);
+			inv.setItem(slot, item);
+			slot++;
+		}
+		return inv;
+	}
+
+	public static Material getGameruleIcon(String gamerule) {
+		switch (gamerule.toLowerCase()) {
+		case "commandblockoutput":
+			return Material.COMMAND;
+		case "dodaylightcycle":
+			return Material.WATCH;
+		case "doentitydrops":
+			return Material.ARMOR_STAND;
+		case "dofiretick":
+			return Material.FLINT_AND_STEEL;
+		case "domobloot":
+			return Material.ROTTEN_FLESH;
+		case "domobspawning":
+			return Material.MONSTER_EGG;
+		case "dotiledrops":
+			return Material.SAND;
+		case "keepinventory":
+			return Material.CHEST;
+		case "logadmincommands":
+			return Material.BOOK_AND_QUILL;
+		case "mobgriefing":
+			return Material.SULPHUR;
+		case "naturalregeneration":
+			return Material.GOLDEN_APPLE;
+		case "randomtickspeed":
+			return Material.REDSTONE_COMPARATOR;
+		case "reduceddebuginfo":
+			return Material.BOOK;
+		case "sendcommandfeedback":
+			return Material.PAPER;
+		case "showdeathmessages":
+			return Material.SKULL_ITEM;
+		default:
+			return Material.BARRIER;
+		}
 	}
 
 	public static boolean deleteWorld(File path) {
@@ -533,6 +753,12 @@ public class Utils {
 			for (String r : file.list())
 				if (r.equals("session.lock"))
 					return true;
+		return false;
+	}
+
+	public static boolean isPriorityWorld(World world) {
+		if (world != null && Bukkit.getWorlds().indexOf(world) < 3)
+			return true;
 		return false;
 	}
 }

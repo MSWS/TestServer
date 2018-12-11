@@ -5,8 +5,11 @@ import java.io.File;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -37,19 +40,99 @@ public class Events implements Listener {
 		if (openInventory == null)
 			return;
 
+		if (openInventory.equals("gameruleViewer")) {
+			event.setCancelled(true);
+			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+			String rule = ChatColor.stripColor(item.getItemMeta().getDisplayName()),
+					value = world.getGameRuleValue(rule);
+			if (value.equalsIgnoreCase("true")) {
+				world.setGameRuleValue(rule, "False");
+			} else if (value.equalsIgnoreCase("false")) {
+				world.setGameRuleValue(rule, "True");
+			} else {
+				player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
+				return;
+			}
+			player.playSound(player.getLocation(), Sound.CLICK, 1, value.equalsIgnoreCase("true") ? 1.5f : 2);
+			player.openInventory(Utils.getGameruleGUI(player, world));
+			PlayerManager.setInfo(player, "openInventory", "gameruleViewer");
+		}
+		if (openInventory.equals("entityViewer")) {
+			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+			event.setCancelled(true);
+			int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
+			if (item == null || item.getType() == Material.AIR)
+				return;
+			if (event.getSlot() == event.getInventory().getSize() - 1 && item.getType() == Material.ARROW) {
+				PlayerManager.setInfo(player, "page", page + 1);
+				player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
+				PlayerManager.setInfo(player, "openInventory", "entityViewer");
+				return;
+			}
+			if (event.getSlot() == event.getInventory().getSize() - 9 && item.getType() == Material.ARROW) {
+				PlayerManager.setInfo(player, "page", page - 1);
+				player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
+				PlayerManager.setInfo(player, "openInventory", "entityViewer");
+				return;
+			}
+			String uuid = ChatColor.stripColor(item.getItemMeta().getLore().get(0));
+			Entity ent = null;
+			for (Entity e : world.getEntities()) {
+				if (e.getUniqueId().toString().equals(uuid)) {
+					ent = e;
+					break;
+				}
+			}
+			if (ent == null) {
+				MSG.tell(player, MSG.getString("Unable.Entity", "Unable to manage that entity, reason: %reason%")
+						.replace("%reason%", "Entity not found"));
+				return;
+			}
+
+			if (event.getClick() == ClickType.LEFT) {
+				player.teleport(ent);
+				return;
+			}
+			if (event.getClick() == ClickType.SHIFT_LEFT) {
+				ent.teleport(player);
+				return;
+			}
+			if (event.getClick() == ClickType.RIGHT) {
+				if (ent instanceof Player) {
+					((LivingEntity) ent).damage(((LivingEntity) ent).getHealth());
+				} else {
+					ent.remove();
+				}
+			}
+			if (event.getClick() == ClickType.SHIFT_RIGHT) {
+				for (Entity e : world.getEntitiesByClass(ent.getClass())) {
+					if (e instanceof Player) {
+						((LivingEntity) e).damage(((LivingEntity) e).getHealth());
+					} else {
+						e.remove();
+					}
+				}
+			}
+			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+				player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
+				PlayerManager.setInfo(player, "openInventory", "entityViewer");
+			}, 2);
+
+			return;
+		}
 		if (openInventory.equals("worldViewer")) {
 			event.setCancelled(true);
 			int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
 			if (item == null || item.getType() == Material.AIR)
 				return;
 			if (event.getSlot() == event.getInventory().getSize() - 1 && item.getType() == Material.ARROW) {
-				PlayerManager.setInfo(player, "page", page+1);
+				PlayerManager.setInfo(player, "page", page + 1);
 				player.openInventory(Utils.getWorldViewerGUI(player));
 				PlayerManager.setInfo(player, "openInventory", "worldViewer");
 				return;
 			}
 			if (event.getSlot() == event.getInventory().getSize() - 9 && item.getType() == Material.ARROW) {
-				PlayerManager.setInfo(player, "page", page-1);
+				PlayerManager.setInfo(player, "page", page - 1);
 				player.openInventory(Utils.getWorldViewerGUI(player));
 				PlayerManager.setInfo(player, "openInventory", "worldViewer");
 				return;
@@ -57,13 +140,13 @@ public class Events implements Listener {
 
 			World world = Bukkit.getWorld(ChatColor.stripColor(item.getItemMeta().getDisplayName()));
 			String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
-//			if (world == null) {
-//				player.closeInventory();
-//				MSG.tell(player, "&cThere was an error processing your request.");
-//				return;
-//			}
 
 			if (event.getClick() == ClickType.SHIFT_LEFT) {
+				if (world != null && Utils.isPriorityWorld(world)) {
+					MSG.tell(player, MSG.getString("Unable.Unload", "Unable to unload world, reason: %reason%")
+							.replace("%reason%", "Priority World"));
+					return;
+				}
 				if (world.getPlayers().size() > 0) {
 					MSG.tell(player, MSG.getString("Unable.Unload", "Unable to unload world, reason: %reason%")
 							.replace("%reason%", "Players in world"));
@@ -72,6 +155,17 @@ public class Events implements Listener {
 				MSG.tell(player, MSG.getString("World.Unloading", "unloading %world%").replace("%world%", name));
 				Bukkit.unloadWorld(world, false);
 				MSG.tell(player, MSG.getString("World.Unloaded", "unloaded %world%").replace("%world%", name));
+			}
+			if (event.getClick() == ClickType.MIDDLE) {
+				if (world == null) {
+					MSG.tell(player, MSG.getString("Unable.Gamerule", "Unable to retrieve gamerules, reason: %reason%")
+							.replace("%reason%", "World Unloaded"));
+					return;
+				}
+				player.openInventory(Utils.getGameruleGUI(player, world));
+				PlayerManager.setInfo(player, "openInventory", "gameruleViewer");
+				PlayerManager.setInfo(player, "managingWorld", world.getName());
+				return;
 			}
 			if (event.getClick() == ClickType.LEFT) {
 				if (world == null) {
@@ -86,7 +180,8 @@ public class Events implements Listener {
 					return;
 				}
 				if (player.getWorld().equals(world)) {
-					MSG.tell(player, "&cYou are already in this world.");
+					MSG.tell(player, MSG.getString("Unable.Teleport", "unable to enter %reason%").replace("%reason%",
+							"Already in world"));
 					return;
 				}
 				player.closeInventory();
@@ -96,6 +191,11 @@ public class Events implements Listener {
 			if (event.getClick() == ClickType.SHIFT_RIGHT) {
 				File worldFolder = new File(Bukkit.getWorldContainer().toPath() + File.separator + name);
 				if (world != null) {
+					if (world != null && Utils.isPriorityWorld(world)) {
+						MSG.tell(player, MSG.getString("Unable.Unload", "Unable to unload world, reason: %reason%")
+								.replace("%reason%", "Priority World"));
+						return;
+					}
 					if (world.getPlayers().size() > 0) {
 						MSG.tell(player, MSG.getString("Unable.Delete", "Unable to delete world, reason: %reason%")
 								.replace("%reason%", "Players in world"));
@@ -137,8 +237,7 @@ public class Events implements Listener {
 		String openInventory = PlayerManager.getString(player, "openInventory");
 		if (openInventory == null)
 			return;
-		if (openInventory.equals("worldViewer"))
-			PlayerManager.setInfo(player, "openInventory", null);
+		PlayerManager.setInfo(player, "openInventory", null);
 	}
 
 	@EventHandler
