@@ -14,6 +14,8 @@ import org.mswsplex.testserver.commands.TestworldCommand;
 import org.mswsplex.testserver.events.Events;
 import org.mswsplex.testserver.managers.PlayerManager;
 import org.mswsplex.testserver.utils.MSG;
+import org.mswsplex.testserver.utils.UpdateChecker;
+import org.mswsplex.testserver.utils.UpdateChecker.UpdateReason;
 
 public class Main extends JavaPlugin {
 	public FileConfiguration config, data, lang, gui;
@@ -43,9 +45,27 @@ public class Main extends JavaPlugin {
 		MSG.plugin = this;
 		PlayerManager.plugin = this;
 
+		if (config.getBoolean("AutoUpdateChecker"))
+			UpdateChecker.init(this, 63102).requestUpdateCheck().whenComplete((result, exception) -> {
+				if (result.requiresUpdate()) {
+					MSG.log("You are running an outdated version (" + this.getDescription().getVersion() + " vs "
+							+ result.getNewestVersion() + ")");
+					MSG.log("You can download the update here: https://www.spigotmc.org/resources/63102/");
+					return;
+				}
+				UpdateReason reason = result.getReason();
+				if (reason == UpdateReason.UP_TO_DATE) {
+					MSG.log("TestServer is currently up to date.");
+				} else if (reason == UpdateReason.UNRELEASED_VERSION) {
+					MSG.log("You are running a developmental version (" + this.getDescription().getVersion() + " vs "
+							+ result.getOnlineVersion() + ")");
+				} else {
+					MSG.log("Error, could not check latest version. Reason: " + reason);
+				}
+			});
 		MSG.log("&aSuccessfully Enabled!");
 	}
-	
+
 	public void onDisable() {
 		saveData();
 	}

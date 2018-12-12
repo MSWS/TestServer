@@ -1,6 +1,6 @@
 name: TestServer
 main: org.mswsplex.testserver.msws.Main
-version: 1.0
+version: 1.0.1
 description: Test Server Management
 commands:
    test:

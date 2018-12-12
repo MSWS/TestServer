@@ -120,7 +120,7 @@ public class FillCommand implements CommandExecutor, TabCompleter {
 			amo++;
 		}
 
-		if (amo >= 100000 && (sender instanceof Player) && !PlayerManager.getBoolean(((Player) sender), "confirmed")) {
+		if (amo >= plugin.getConfig().getInt("MaxFillBlocks") && (sender instanceof Player) && !PlayerManager.getBoolean(((Player) sender), "confirmed")) {
 			MSG.tell(sender, MSG.getString("Warning.LargeChange", "warning this will affect %blocks% blocks")
 					.replace("%blocks%", amo + ""));
 

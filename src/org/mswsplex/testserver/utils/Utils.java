@@ -435,7 +435,7 @@ public class Utils {
 				it.remove();
 		}
 		int maxSize = 54;
-		int size = (int) Math.min(Math.max((Math.ceil(world.getEntities().size() / 9.0) * 9), 9), maxSize);
+		int size = (int) Math.min(Math.max((Math.ceil(entities.size() / 9.0) * 9), 9), maxSize);
 		int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
 		Inventory inv = Bukkit.createInventory(null, size, "Entities Viewer");
 		int pos = (maxSize - 2) * page;

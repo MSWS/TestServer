@@ -1,1 +1,5 @@
 Prefix: '&9Test>&7'
+#Whether or not the plugin should automatically check for updates
+AutoUpdateChecker: true
+#Maximum number of blocks changed before /confirm is required
+MaxFillBlocks: 100000
