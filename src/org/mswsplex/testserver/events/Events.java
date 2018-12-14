@@ -4,6 +4,8 @@ import java.io.File;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Difficulty;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -26,6 +28,9 @@ import org.mswsplex.testserver.msws.Main;
 import org.mswsplex.testserver.utils.MSG;
 import org.mswsplex.testserver.utils.Utils;
 
+import com.onarandombox.MultiverseCore.MultiverseCore;
+import com.onarandombox.MultiverseCore.api.MultiverseWorld;
+
 public class Events implements Listener {
 	private Main plugin;
 
@@ -34,27 +39,99 @@ public class Events implements Listener {
 		Bukkit.getPluginManager().registerEvents(this, this.plugin);
 	}
 
+	@SuppressWarnings("deprecation")
 	@EventHandler
 	public void onClick(InventoryClickEvent event) {
 		Player player = (Player) event.getWhoClicked();
 		String openInventory = PlayerManager.getString(player, "openInventory");
 		ItemStack item = event.getCurrentItem();
+		if (item == null || item.getType() == Material.AIR)
+			return;
 		if (openInventory == null)
 			return;
 		if (openInventory.equals("gameruleViewer")) {
 			event.setCancelled(true);
+			if (!item.hasItemMeta() || !item.getItemMeta().hasLore())
+				return;
 			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+
 			String rule = ChatColor.stripColor(item.getItemMeta().getDisplayName()),
 					value = world.getGameRuleValue(rule);
+
+			if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+				player.playSound(player.getLocation(), Sound.CLICK, 1, value.equalsIgnoreCase("true") ? 1.5f : 2);
+			}
 			if (value.equalsIgnoreCase("true")) {
 				world.setGameRuleValue(rule, "False");
 			} else if (value.equalsIgnoreCase("false")) {
 				world.setGameRuleValue(rule, "True");
+			} else if (plugin.getMultiverseCore() != null) {
+				MultiverseCore mv = plugin.getMultiverseCore();
+				MultiverseWorld mw = mv.getMVWorldManager().getMVWorld(world);
+				String name = ChatColor.stripColor(item.getItemMeta().getDisplayName()), soundType = "iterate";
+				switch (name.toLowerCase()) {
+				case "hunger":
+					mw.setHunger(!mw.getHunger());
+					soundType = mw.getHunger() ? "enable" : "disable";
+					break;
+				case "flight enabled":
+					mw.setAllowFlight(!mw.getAllowFlight());
+					soundType = mw.getAllowFlight() ? "enable" : "disable";
+					break;
+				case "animals":
+					mw.setAllowAnimalSpawn(!mw.canAnimalsSpawn());
+					soundType = mw.canAnimalsSpawn() ? "enable" : "disable";
+					break;
+				case "monsters":
+					mw.setAllowMonsterSpawn(!mw.canMonstersSpawn());
+					soundType = mw.canMonstersSpawn() ? "enable" : "disable";
+					break;
+				case "difficulty":
+					mw.setDifficulty(
+							Difficulty.getByValue((mw.getDifficulty().ordinal() + 1) % Difficulty.values().length));
+					break;
+				case "visible":
+					mw.setHidden(!mw.isHidden());
+					soundType = mw.isHidden() ? "enable" : "disable";
+					break;
+				case "player limit":
+					if (event.getClick() == ClickType.RIGHT) {
+						mw.setPlayerLimit(mw.getPlayerLimit() + 1);
+					} else if (event.getClick() == ClickType.SHIFT_RIGHT) {
+						mw.setPlayerLimit(mw.getPlayerLimit() + 10);
+					} else if (event.getClick() == ClickType.LEFT) {
+						mw.setPlayerLimit(Math.max(-1, mw.getPlayerLimit() - 1));
+					} else if (event.getClick() == ClickType.SHIFT_LEFT) {
+						mw.setPlayerLimit(Math.max(-1, mw.getPlayerLimit() - 10));
+					}
+					break;
+				case "gamemode":
+					GameMode mode = mw.getGameMode();
+					if (mode == GameMode.SPECTATOR) {
+						mode = GameMode.SURVIVAL;
+					} else if (mode == GameMode.SURVIVAL) {
+						mode = GameMode.CREATIVE;
+					} else if (mode == GameMode.CREATIVE) {
+						mode = GameMode.ADVENTURE;
+					} else if (mode == GameMode.ADVENTURE) {
+						mode = GameMode.SPECTATOR;
+					}
+					mw.setGameMode(mode);
+					break;
+				default:
+					player.playSound(player.getLocation(), Sound.ITEM_BREAK, 1, .2f);
+					return;
+				}
+				if (soundType.equals("iterate")) {
+					player.playSound(player.getLocation(), Sound.CLICK, 1f, 1f);
+				} else {
+					player.playSound(player.getLocation(), Sound.CLICK, 1,
+							soundType.equalsIgnoreCase("enable") ? 2 : 1.5f);
+				}
 			} else {
-				player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
+				player.playSound(player.getLocation(), Sound.ITEM_BREAK, 1, .2f);
 				return;
 			}
-			player.playSound(player.getLocation(), Sound.CLICK, 1, value.equalsIgnoreCase("true") ? 1.5f : 2);
 			player.openInventory(Utils.getGameruleGUI(player, world));
 			PlayerManager.setInfo(player, "openInventory", "gameruleViewer");
 		}
@@ -78,7 +155,7 @@ public class Events implements Listener {
 				player.playSound(player.getLocation(), Sound.CLICK, 1, .75f);
 				return;
 			}
-			if(!item.hasItemMeta()||!item.getItemMeta().hasLore())
+			if (!item.hasItemMeta() || !item.getItemMeta().hasLore())
 				return;
 			String uuid = ChatColor.stripColor(item.getItemMeta().getLore().get(0));
 			Entity ent = null;
@@ -144,7 +221,7 @@ public class Events implements Listener {
 				PlayerManager.setInfo(player, "openInventory", "worldViewer");
 				return;
 			}
-			if(!item.hasItemMeta()||!item.getItemMeta().hasDisplayName())
+			if (!item.hasItemMeta() || !item.getItemMeta().hasDisplayName())
 				return;
 			World world = Bukkit.getWorld(ChatColor.stripColor(item.getItemMeta().getDisplayName()));
 			String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
@@ -191,6 +268,7 @@ public class Events implements Listener {
 				if (player.getWorld().equals(world)) {
 					MSG.tell(player, MSG.getString("Unable.Teleport", "unable to enter %reason%").replace("%reason%",
 							"Already in world"));
+					player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
 					return;
 				}
 				player.closeInventory();
@@ -272,7 +350,7 @@ public class Events implements Listener {
 				continue;
 			LivingEntity lent = (LivingEntity) ent;
 			lent.setVelocity((ent.getLocation().toVector().subtract(player.getLocation().toVector())
-					.divide(new Vector(size/2.5, size/2.5, size/2.5)).setY(size/10)));
+					.divide(new Vector(size / 2.5, size / 2.5, size / 2.5)).setY(size / 10)));
 			lent.getWorld().playSound(lent.getLocation(), Sound.CHICKEN_EGG_POP, 2, .1f);
 		}
 	}

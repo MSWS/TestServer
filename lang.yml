@@ -1,27 +1,36 @@
-NoPermission: '%prefix% You do not have permission to do this.'
+NoPermission: '%prefix% You do not have permission to do this.' #Unused
+Reset: '&7Successfully reset.'
+Reloaded: '&7Successfully reloaded.'
 Warning:
   Time: '&4&l[WARNING] &cThis may take some time.'
   Confirm: '&a&l[CONFIRM] &aType /confirm to confirm this action.'
   LargeChange: '&4&l[WARNING] &cThis action will affect &4%blocks% &cblocks.'
+  LargeSize: '&4&l[WARNING] &cYour forcefield is very large and may cause lag. (Size:
+    &e%size%&c)'
+  Lag: '&4&l[WARNING] &cThe entered number (%lagColor%%amo%ms&c) is very high.'
 Unknown:
   Number: '&cInvalid Number.'
   Blocks:
     Message: '&4&l[WARNING] &cUnknown Block%s%: &e%blocks%'
     Separator: '&7, &e'
-  Confirm: '&cYou do not have a confirmable command.'
+  Confirm: '&cYou do not have a pending command.'
+  World: '&cUnknown World.'
 Unable:
-  Delete: '&4&l[ERROR] &cUnable to delete this world. Reason: &e%reason%'
-  Unload: '&4&l[ERROR] &cUnable to unload this world. Reason: &e%reason%'
-  Kick: '&4&l[ERROR] &cUnable to kick players. Reason: &e%reason%'
-  Teleport: '&4&l[ERROR] &cUnable to enter world. Reason: &e%reason%'
-  Gamerule: '&4&l[ERROR] &cUnable to retrieve gamerules. Reason: &e%reason%'
-  Entity: '&4&l[ERROR] &cUnable to manage that entity. Reason: &e%reason%'
+  Delete: '&4&l[ERROR] &cUnable to delete this world. Reason: &e%reason%&c.'
+  Unload: '&4&l[ERROR] &cUnable to unload this world. Reason: &e%reason%&c.'
+  Kick: '&4&l[ERROR] &cUnable to kick players. Reason: &e%reason%&c.'
+  Teleport: '&4&l[ERROR] &cUnable to enter world. Reason: &e%reason%&c.'
+  Gamerule: '&4&l[ERROR] &cUnable to retrieve gamerules. Reason: &e%reason%&c.'
+  Entity: '&4&l[ERROR] &cUnable to manage that entity. Reason: &e%reason%&c.'
+  FillLimit: '&4&l[ERROR] &cToo many blocks would be modified (&e%blocks%/%max%&c).'
+  ForcefieldLimit: '&4&l[ERROR] &cSize is too high (&e%size%/%max%&c).'
+  Lag: '&4&l[ERROR] &cLag amount is too high (&e%amo%/%max%&c).'
 World:
   Generating:
     Layers: '&c&l[INFO] &7Generating &e%name%&7 with &a%layers%&7 layer%s%.'
     Other: '&c&l[INFO] &7Generating &e%name%&7 with &e%type%&7 preset.'
   Filled: '%amo% block%s% filled'
-  Kicked: '&7&l[INFO] Successfully kicked &e%amo% &7player%s% to your world.'
+  Kicked: '&7&l[INFO]&7 Successfully kicked &e%amo% &7player%s% to your world.'
   Deleting: '&c&l[START] &7Deleting &e%world% &7world.'
   Deleted: '&a&l[COMPLETE] &7Successfully deleted &e%world%&7.'
   Unloading: '&c&l[START] &7Unloading &e%world% &7world.'
@@ -33,5 +42,17 @@ Forcefield:
   Disabled: '&cYou disabled your forcefield.'
   Enabled: '&7You now have an active forcefield of &e%size%&7 block%s%.'
   Info:
-    Active: '&7Your current forcefield is set to &e%size% &7block%s%. Use &e/forcefield 0&7 to disable it.'
+    Active: '&7Your current forcefield is set to &e%size% &7block%s%. Use &e/forcefield
+      0&7 to disable it.'
     Disabled: '&7Your forcefield is inactive.'
+Lag:
+  Inactive: '&7There is currently no artificial lag on the server.'
+  Active: '&7There is an artificial lag of %lagColor%%amo%ms &7on the server.'
+  Enabled: '&7You enabled artificial lag of %lagColor%%amo%ms&7.'
+  Disabled: '&7You disabled artificial lag on the server.'
+Help:
+  default:
+  - '&e<>&7 Optional &e() &7Required'
+  - '&e/test worlds&f- Open world management GUI'
+  - '&e/test entities <World>&f- Open entity management GUI'
+  - '&e/test lag [Milliseconds] &f- Artificially lags the server'

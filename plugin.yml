@@ -1,7 +1,8 @@
 name: TestServer
 main: org.mswsplex.testserver.msws.Main
-version: 1.0.1
+version: 1.0.2
 description: Test Server Management
+softdepend: [Multiverse-Core]
 commands:
    test:
       usage: /<command>

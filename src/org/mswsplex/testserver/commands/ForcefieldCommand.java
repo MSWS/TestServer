@@ -38,6 +38,25 @@ public class ForcefieldCommand implements CommandExecutor {
 			return true;
 		}
 
+		if (size >= plugin.getConfig().getInt("Max.ForcefieldRadius.HardLimit")) {
+			MSG.tell(sender,
+					MSG.getString("Unable.ForcefieldLimit", "size is too big %size% blocks")
+							.replace("%size%", size + "")
+							.replace("%max%", plugin.getConfig().getInt("Max.ForcefieldRadius.HardLimit") + ""));
+			return true;
+		}
+		if (size >= plugin.getConfig().getInt("Max.ForcefieldRadius.Confirm") && (sender instanceof Player)
+				&& !PlayerManager.getBoolean(((Player) sender), "confirmed")) {
+			MSG.tell(sender, MSG.getString("Warning.LargeSize", "size is %size%").replace("%size%", size + ""));
+
+			MSG.tell(sender, MSG.getString("Warning.Confirm", "type /confirm to confirm this action"));
+			String all = label + " ";
+			for (String res : args)
+				all = all + res + " ";
+			PlayerManager.setInfo((Player) sender, "confirmCommand", all);
+			return true;
+		}
+
 		if (size <= 0) {
 			if (PlayerManager.getInfo(player, "forcefield") == null) {
 				MSG.tell(sender, MSG.getString("Forcefield.Missing", "unable to disable forcefield"));

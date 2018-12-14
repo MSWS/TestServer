@@ -1,5 +1,24 @@
-Prefix: '&9Test>&7'
 #Whether or not the plugin should automatically check for updates
 AutoUpdateChecker: true
 #Maximum number of blocks changed before /confirm is required
 MaxFillBlocks: 100000
+#How many lines per /help page
+HelpLength: 10
+LagColors:
+  150: '&4'
+  100: '&c'
+  80: '&6'
+  50: '&e'
+  0: '&a'
+#Confirm value is how high it can be before having to do /confirm
+#HardLimit is the total max that is possible
+Max:
+  Fill:
+    Confirm: 50000
+    HardLimit: 200000
+  ForcefieldRadius:
+    Confirm: 100
+    HardLimit: 200
+  LagAmount:
+    Confirm: 1000
+    HardLimit: 5000

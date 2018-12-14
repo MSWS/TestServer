@@ -3,6 +3,7 @@ package org.mswsplex.testserver.utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,8 +33,15 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.mswsplex.testserver.managers.PlayerManager;
 import org.mswsplex.testserver.msws.Main;
 
+import com.onarandombox.MultiverseCore.MultiverseCore;
+import com.onarandombox.MultiverseCore.api.MultiverseWorld;
+
 public class Utils {
 	public static Main plugin;
+
+	public Utils() {
+		MSG.log("utils initialized");
+	}
 
 	/**
 	 * Returns a ranking of all the armor from value
@@ -437,7 +445,17 @@ public class Utils {
 		int maxSize = 54;
 		int size = (int) Math.min(Math.max((Math.ceil(entities.size() / 9.0) * 9), 9), maxSize);
 		int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
-		Inventory inv = Bukkit.createInventory(null, size, "Entities Viewer");
+		Inventory inv = Bukkit.createInventory(null, size, "Entities Viewer (" + entities.size() + " Total)");
+		if (entities.size() == 0) {
+			for (int i = 0; i < inv.getSize(); i++) {
+				ItemStack item = new ItemStack(Material.BARRIER);
+				ItemMeta meta = item.getItemMeta();
+				meta.setDisplayName(MSG.color("&c&lNo Entities"));
+				item.setItemMeta(meta);
+				inv.setItem(i, item);
+			}
+			return inv;
+		}
 		int pos = (maxSize - 2) * page;
 		for (int i = 0; i < size && i + (page * (maxSize - 2)) + 1 <= entities.size(); i++) {
 			if (inv.getSize() == maxSize && (i == inv.getSize() - 9 || i == inv.getSize() - 1))
@@ -486,8 +504,9 @@ public class Utils {
 			if (ent.getCustomName() != null)
 				suffix = " (" + ent.getCustomName() + ")";
 			meta.setDisplayName(MSG.color(prefix + MSG.camelCase(ent.getType() + "")) + suffix);
-			if(ent instanceof Item) {
-				meta.setDisplayName(MSG.color(prefix + MSG.camelCase(((Item)ent).getItemStack().getType() + "")) + suffix);
+			if (ent instanceof Item) {
+				meta.setDisplayName(
+						MSG.color(prefix + MSG.camelCase(((Item) ent).getItemStack().getType() + "")) + suffix);
 			}
 //			if ((ent.getType()+"").contains(".")) {
 //				meta.setDisplayName(MSG.color(
@@ -567,9 +586,9 @@ public class Utils {
 			return Material.COMMAND_MINECART;
 		case ("splash_potion"):
 			return Material.POTION;
-		case("ender_crystal"):
+		case ("ender_crystal"):
 			return Material.EYE_OF_ENDER;
-		case("experience_orb"):
+		case ("experience_orb"):
 			return Material.EXP_BOTTLE;
 		default:
 			MSG.log("Unknown Entity: " + type);
@@ -584,6 +603,7 @@ public class Utils {
 		int page = (int) Math.round(PlayerManager.getDouble(player, "page"));
 		Inventory inv = Bukkit.createInventory(null, size, "World Viewer");
 		int pos = (maxSize - 2) * page;
+
 		for (int i = 0; i < size && i + (page * (maxSize - 2)) + 1 <= worlds.size(); i++) {
 			if (inv.getSize() == maxSize && (i == inv.getSize() - 9 || i == inv.getSize() - 1))
 				continue;
@@ -673,7 +693,9 @@ public class Utils {
 	}
 
 	public static Inventory getGameruleGUI(Player player, World world) {
-		int size = (int) Math.min(Math.max((Math.ceil(world.getGameRules().length / 9.0) * 9), 9), 54);
+		boolean addMV = plugin.getMultiverseCore() != null;
+		int size = (int) Math.min(Math.max((Math.ceil(world.getGameRules().length / 9.0) * 9), 9) + (addMV ? 18 : 0),
+				54);
 		Inventory inv = Bukkit.createInventory(null, size, world.getName() + " Gamerules");
 		int slot = 0;
 		for (String res : world.getGameRules()) {
@@ -691,7 +713,68 @@ public class Utils {
 			inv.setItem(slot, item);
 			slot++;
 		}
+
+		if (!addMV)
+			return inv;
+
+		for (int i = 0; i < 9; i++) {
+			ItemStack item = new ItemStack(Material.STAINED_GLASS_PANE);
+			item.setDurability((short) 11);
+			ItemMeta meta = item.getItemMeta();
+			meta.setDisplayName(MSG.color("&9&lMultiverse Settings"));
+			meta.setLore(Arrays.asList(MSG.color("&bBelow are Multiverse Settings")));
+			item.setItemMeta(meta);
+			inv.setItem((inv.getSize() - 18) + i, item);
+		}
+
+		MultiverseCore mv = plugin.getMultiverseCore();
+		MultiverseWorld mw = mv.getMVWorldManager().getMVWorld(world);
+		HashMap<String, Object> entries = getMultiverseWorldValues(mw);
+
+		int pos = 0;
+		for (String res : entries.keySet()) {
+			ItemStack item = new ItemStack(getGameruleIcon(res));
+			ItemMeta meta = item.getItemMeta();
+			meta.setDisplayName(MSG.color("&a&l" + res));
+			List<String> lore = new ArrayList<>();
+			if (entries.get(res) instanceof Boolean) {
+				lore.add(MSG.color("&e" + MSG.TorF(Boolean.valueOf(entries.get(res) + ""))));
+			} else {
+				if (res.equals("Player Limit")) {
+					lore.add(MSG.color(
+							"&e" + MSG.camelCase((int) entries.get(res) == -1 ? "None" : entries.get(res) + "")));
+				} else {
+					lore.add(MSG.color("&e" + MSG.camelCase(entries.get(res) + "")));
+				}
+			}
+			if (res.equals("Player Limit")) {
+				lore.add("");
+				lore.add(MSG.color("&e&lShift-Right Click &e+10"));
+				lore.add(MSG.color("&e&lShift-Left Click &e-10"));
+				lore.add(MSG.color("&e&lRight Click &e+1"));
+				lore.add(MSG.color("&e&lLeft Click &e-1"));
+			}
+			meta.setLore(lore);
+			item.setItemMeta(meta);
+			inv.setItem(inv.getSize() - 9 + pos, item);
+			pos++;
+		}
+
 		return inv;
+	}
+
+	public static HashMap<String, Object> getMultiverseWorldValues(MultiverseWorld world) {
+		HashMap<String, Object> values = new HashMap<>();
+		values.put("Flight Enabled", world.getAllowFlight());
+		values.put("Animals", world.canAnimalsSpawn());
+		values.put("Monsters", world.canMonstersSpawn());
+		values.put("Difficulty", world.getDifficulty());
+		values.put("Gamemode", world.getGameMode());
+		values.put("Hunger", world.getHunger());
+		values.put("PVP", world.isPVPEnabled());
+		values.put("Player Limit", world.getPlayerLimit());
+		values.put("Visible", !world.isHidden());
+		return values;
 	}
 
 	public static Material getGameruleIcon(String gamerule) {
@@ -726,6 +809,24 @@ public class Utils {
 			return Material.PAPER;
 		case "showdeathmessages":
 			return Material.SKULL_ITEM;
+		case "flight enabled":
+			return Material.FEATHER;
+		case "animals":
+			return Material.PORK;
+		case "monsters":
+			return Material.MONSTER_EGG;
+		case "difficulty":
+			return Material.DIAMOND_SWORD;
+		case "gamemode":
+			return Material.DIAMOND_BLOCK;
+		case "hunger":
+			return Material.ROTTEN_FLESH;
+		case "pvp":
+			return Material.BOW;
+		case "player limit":
+			return Material.SPONGE;
+		case "visible":
+			return Material.GLASS;
 		default:
 			return Material.BARRIER;
 		}

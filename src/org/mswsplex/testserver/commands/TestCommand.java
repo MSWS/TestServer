@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,14 +20,26 @@ import org.mswsplex.testserver.utils.Utils;
 public class TestCommand implements CommandExecutor, TabCompleter {
 	private Main plugin;
 
+	private int lag;
+
 	public TestCommand(Main plugin) {
 		this.plugin = plugin;
 		plugin.getCommand("test").setExecutor(this);
 		plugin.getCommand("test").setTabCompleter(this);
+
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin, () -> {
+			if (lag > 0)
+				try {
+					Thread.sleep(lag);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+		}, 0, 1);
 	}
 
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (args.length == 0) {
+			MSG.sendHelp(sender, 0, "default");
 			return true;
 		}
 		Player player;
@@ -38,7 +51,7 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 			plugin.lang = YamlConfiguration.loadConfiguration(plugin.langYml);
 			plugin.guiYml = new File(plugin.getDataFolder(), "guis.yml");
 			plugin.gui = YamlConfiguration.loadConfiguration(plugin.guiYml);
-			MSG.tell(sender, MSG.getString("Reloaded", "Successfully reloaded."));
+			MSG.tell(sender, MSG.getString("Reloaded", "There was an error reloading."));
 			break;
 		case "reset":
 			plugin.saveResource("config.yml", true);
@@ -50,7 +63,7 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 			plugin.lang = YamlConfiguration.loadConfiguration(plugin.langYml);
 			plugin.guiYml = new File(plugin.getDataFolder(), "guis.yml");
 			plugin.gui = YamlConfiguration.loadConfiguration(plugin.guiYml);
-			MSG.tell(sender, MSG.prefix() + " Succesfully reset.");
+			MSG.tell(sender, MSG.getString("Reset", "There was an error resetting."));
 			break;
 		case "worlds":
 			if (!(sender instanceof Player)) {
@@ -68,10 +81,61 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 				return true;
 			}
 			player = (Player) sender;
+			World world = player.getWorld();
+			if (args.length > 1)
+				world = Bukkit.getWorld(args[1]);
+			if (world == null) {
+				MSG.tell(sender, MSG.getString("Unknown.World", "Unknown world"));
+				return true;
+			}
 			PlayerManager.setInfo(player, "page", 0);
-			player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
+			player.openInventory(Utils.getEntityViewerGUI(player, world));
 			PlayerManager.setInfo(player, "openInventory", "entityViewer");
-			PlayerManager.setInfo(player, "managingWorld", player.getWorld().getName());
+			PlayerManager.setInfo(player, "managingWorld", world.getName());
+			break;
+		case "lag":
+			if (args.length == 1) {
+				if (lag > 0) {
+					MSG.tell(sender, MSG.getString("Lag.Active", "lag is at %lagColor%%amo%ms")
+							.replace("%lagColor%", lagColor(lag)).replace("%amo%", lag + ""));
+				} else {
+					MSG.tell(sender, MSG.getString("Lag.Inactive", "There is no lag at the moment"));
+				}
+				return true;
+			}
+			int amo;
+			try { // /test lag 1
+				amo = Integer.parseInt(args[1]);
+			} catch (IllegalArgumentException e) {
+				MSG.tell(sender, MSG.getString("Unknown.Number", "unknown number"));
+				return true;
+			}
+			if (amo <= 0) {
+				MSG.tell(sender, MSG.getString("Lag.Disabled", "you disabled the artificial lag"));
+				lag = 0;
+				return true;
+			}
+
+			if (amo > plugin.config.getInt("Max.LagAmount.HardLimit")) {
+				MSG.tell(sender, MSG.getString("Unable.Lag", "max reached: &e%amo%/%max%&c").replace("%amo%", amo + "")
+						.replace("%max%", plugin.config.getInt("Max.LagAmount.HardLimit") + ""));
+				return true;
+			}
+
+			if (amo > plugin.config.getInt("Max.LagAmount.Confirm") && (sender instanceof Player)
+					&& !PlayerManager.getBoolean(((Player) sender), "confirm")) {
+				MSG.tell(sender, MSG.getString("Warning.Lag", "this will be very laggy(%lagColor%%amo%ms&c)")
+						.replace("%lagColor%", lagColor(amo)).replace("%amo%", amo + ""));
+				MSG.tell(sender, MSG.getString("Warning.Confirm", "type /confirm to confirm this action"));
+				String all = label + " ";
+				for (String res : args)
+					all = all + res + " ";
+				PlayerManager.setInfo((Player) sender, "confirmCommand", all);
+				return true;
+			}
+			MSG.tell(sender, MSG.getString("Lag.Enabled", "you set lag to %lagColor%%amo%ms")
+					.replace("%lagColor%", lagColor(amo)).replace("%amo%", amo + ""));
+			lag = amo;
 			break;
 		case "unloaded":
 			MSG.tell(sender, Bukkit.getWorldContainer().toPath() + "");
@@ -86,11 +150,49 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 
 	public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
 		List<String> result = new ArrayList<>();
-		for (String res : new String[] { "worlds", "entities" }) {
-			if (args.length <= 1 && res.toLowerCase().startsWith(args[0].toLowerCase())) {
-				result.add(res);
+		if (args.length <= 1) {
+			for (String res : new String[] { "worlds", "entities", "lag" }) {
+				if (res.toLowerCase().startsWith(args[0].toLowerCase())) {
+					result.add(res);
+				}
+			}
+		}
+		if (args.length > 1 && args.length < 3) {
+			if (args[0].equalsIgnoreCase("entities")) {
+				for (World w : Bukkit.getWorlds()) {
+					if (w.getName().toLowerCase().startsWith(args[1].toLowerCase()))
+						result.add(w.getName());
+				}
 			}
 		}
 		return result;
+	}
+
+	private String lagColor(int amo) {
+		String col = "";
+		int big = 0;
+		try {
+			for (String level : plugin.getConfig().getConfigurationSection("LagColors").getKeys(false)) {
+				int l = Integer.parseInt(level);
+				if (amo >= l && l >= big) {
+					big = l;
+					col = plugin.getConfig().getString("LagColors." + level);
+				}
+			}
+			return col;
+		} catch (Exception e) {
+			MSG.log("[WARNING] Configuration is outdated, please type /test reset to reset the config");
+		}
+		if (amo > 150) {
+			return "&4";
+		} else if (amo > 100) {
+			return "&c";
+		} else if (amo > 80) {
+			return "&6";
+		} else if (amo > 50) {
+			return "&e";
+		} else {
+			return "&a";
+		}
 	}
 }
