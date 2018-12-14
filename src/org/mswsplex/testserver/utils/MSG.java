@@ -66,7 +66,7 @@ public class MSG {
 	 */
 	public static void tell(CommandSender sender, String msg) {
 		if (msg != null && !msg.isEmpty())
-			sender.sendMessage(color(msg.replace("%prefix%", prefix())));
+			sender.sendMessage(color(msg));
 	}
 
 	/**
@@ -108,15 +108,6 @@ public class MSG {
 	}
 
 	/**
-	 * Gets the prefix defined in config
-	 * 
-	 * @return the prefix
-	 */
-	public static String prefix() {
-		return plugin.config.contains("Prefix") ? plugin.config.getString("Prefix") : "&9Plugin>&7";
-	}
-
-	/**
 	 * Sends a no permission message to the target
 	 * 
 	 * @param sender CommandSender to send message to
@@ -131,7 +122,7 @@ public class MSG {
 	 * @param msg Message to log
 	 */
 	public static void log(String msg) {
-		Bukkit.getLogger().info(MSG.color(msg));
+		tell(Bukkit.getConsoleSender(), "[" + plugin.getDescription().getName() + "] " + msg);
 	}
 
 	/**
@@ -181,7 +172,7 @@ public class MSG {
 						break;
 					perm = perm + a;
 				}
-				if (!sender.hasPermission("plugin." + perm)) // TODO
+				if (!sender.hasPermission(perm)) // TODO
 					continue;
 				res = res.replace(perm + " ", "");
 			}
@@ -194,7 +185,7 @@ public class MSG {
 			tell(sender, res);
 		}
 		if (command.equals("default")) // TODO
-			tell(sender, "&d&lPlugin &ev" + plugin.getDescription().getVersion() + " &7created by &bMSWS");
+			tell(sender, "&b&lTestServer &ev" + plugin.getDescription().getVersion() + " &7created by &bMSWS");
 	}
 
 	/**

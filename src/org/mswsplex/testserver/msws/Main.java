@@ -2,6 +2,7 @@ package org.mswsplex.testserver.msws;
 
 import java.io.File;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -15,7 +16,10 @@ import org.mswsplex.testserver.events.Events;
 import org.mswsplex.testserver.managers.PlayerManager;
 import org.mswsplex.testserver.utils.MSG;
 import org.mswsplex.testserver.utils.UpdateChecker;
+import org.mswsplex.testserver.utils.Utils;
 import org.mswsplex.testserver.utils.UpdateChecker.UpdateReason;
+
+import com.onarandombox.MultiverseCore.MultiverseCore;
 
 public class Main extends JavaPlugin {
 	public FileConfiguration config, data, lang, gui;
@@ -44,7 +48,8 @@ public class Main extends JavaPlugin {
 		new Events(this);
 		MSG.plugin = this;
 		PlayerManager.plugin = this;
-
+		Utils.plugin = this;
+		
 		if (config.getBoolean("AutoUpdateChecker"))
 			UpdateChecker.init(this, 63102).requestUpdateCheck().whenComplete((result, exception) -> {
 				if (result.requiresUpdate()) {
@@ -63,7 +68,13 @@ public class Main extends JavaPlugin {
 					MSG.log("Error, could not check latest version. Reason: " + reason);
 				}
 			});
-		MSG.log("&aSuccessfully Enabled!");
+
+		if (getMultiverseCore() != null)
+			MSG.log("Multiverse succesfully found");
+	}
+
+	public MultiverseCore getMultiverseCore() {
+		return (MultiverseCore) Bukkit.getPluginManager().getPlugin("Multiverse-Core");
 	}
 
 	public void onDisable() {

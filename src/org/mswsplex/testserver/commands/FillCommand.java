@@ -119,8 +119,15 @@ public class FillCommand implements CommandExecutor, TabCompleter {
 				continue;
 			amo++;
 		}
-
-		if (amo >= plugin.getConfig().getInt("MaxFillBlocks") && (sender instanceof Player) && !PlayerManager.getBoolean(((Player) sender), "confirmed")) {
+		if (amo >= plugin.getConfig().getInt("Max.Fill.HardLimit")) {
+			MSG.tell(sender,
+					MSG.getString("Unable.FillLimit", "warning this will affect %blocks% blocks")
+							.replace("%blocks%", amo + "")
+							.replace("%max%", plugin.getConfig().getInt("Max.Fill.HardLimit") + ""));
+			return true;
+		}
+		if (amo >= plugin.getConfig().getInt("Max.Fill.Confirm") && (sender instanceof Player)
+				&& !PlayerManager.getBoolean(((Player) sender), "confirmed")) {
 			MSG.tell(sender, MSG.getString("Warning.LargeChange", "warning this will affect %blocks% blocks")
 					.replace("%blocks%", amo + ""));
 
@@ -130,7 +137,6 @@ public class FillCommand implements CommandExecutor, TabCompleter {
 				all = all + res + " ";
 			PlayerManager.setInfo((Player) sender, "confirmCommand", all);
 			return true;
-
 		}
 
 		for (Block block : cube) {
