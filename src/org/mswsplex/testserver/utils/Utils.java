@@ -739,10 +739,14 @@ public class Utils {
 			List<String> lore = new ArrayList<>();
 			if (entries.get(res) instanceof Boolean) {
 				lore.add(MSG.color("&e" + MSG.TorF(Boolean.valueOf(entries.get(res) + ""))));
+				if((Boolean)entries.get(res)) {
+					item.setAmount(2);
+				}
 			} else {
 				if (res.equals("Player Limit")) {
 					lore.add(MSG.color(
 							"&e" + MSG.camelCase((int) entries.get(res) == -1 ? "None" : entries.get(res) + "")));
+					item.setAmount(Math.max(1,(int) entries.get(res)));
 				} else {
 					lore.add(MSG.color("&e" + MSG.camelCase(entries.get(res) + "")));
 				}

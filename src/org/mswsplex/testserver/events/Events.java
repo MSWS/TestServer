@@ -94,6 +94,10 @@ public class Events implements Listener {
 					mw.setHidden(!mw.isHidden());
 					soundType = mw.isHidden() ? "enable" : "disable";
 					break;
+				case"pvp":
+					mw.setPVPMode(!mw.isPVPEnabled());
+					soundType = mw.isPVPEnabled() ? "enable" : "disable";
+					break;
 				case "player limit":
 					if (event.getClick() == ClickType.RIGHT) {
 						mw.setPlayerLimit(mw.getPlayerLimit() + 1);
