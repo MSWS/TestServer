@@ -1,4 +1,4 @@
-NoPermission: '%prefix% You do not have permission to do this.' #Unused
+NoPermission: '&cYou do not have permission to do this.'
 Reset: '&7Successfully reset.'
 Reloaded: '&7Successfully reloaded.'
 Warning:
@@ -38,13 +38,26 @@ World:
   Loading: '&c&l[START] &7Loading &e%world% &7world.'
   Loaded: '&a&l[COMPLETE] &7Succesfully loaded &e%world%&7.'
 Forcefield:
-  Missing: '&cYou do not have an active forcefield.'
-  Disabled: '&cYou disabled your forcefield.'
-  Enabled: '&7You now have an active forcefield of &e%size%&7 block%s%.'
+  Missing:
+    Self: '&cYou do not have an active forcefield.'
+    Others: '&e%target%&7 does not have an active forcefield.'
+  Disabled:
+    Self: '&cYou disabled your forcefield.'
+    Sender: '&7You &cdisabled &e%target%&7''%s% forcefield.'
+    Receiver: '&e%sender% &cdisabled&7 your forcefield.'
+  Enabled:
+    Self: '&7You now have an active forcefield of &e%size%&7 block%s%.'
+    Sender: '&7You set &e%target%&7''%ns% forcefield to &e%size% &7block%s%&7.'
+    Receiver: '&e%sender%&7 set your forcefield to &e%size% &7block%s%&7.'
   Info:
-    Active: '&7Your current forcefield is set to &e%size% &7block%s%. Use &e/forcefield
-      0&7 to disable it.'
-    Disabled: '&7Your forcefield is inactive.'
+    Active:
+      Others: '&e%player%&7''%ns% current forcefield is set to &e%size% &7block%s%.
+        Use &e/forcefield %player% 0&7 to disable it.'
+      Self: '&7Your current forcefield is set to &e%size% &7block%s%. Use &e/forcefield
+        0&7 to disable it.'
+    Inactive:
+      Others: '&e%player%&7''%s% forcefield is &cinactive&7.'
+      Self: '&7Your forcefield is &cinactive&7.'
 Lag:
   Inactive: '&7There is currently no artificial lag on the server.'
   Active: '&7There is an artificial lag of %lagColor%%amo%ms &7on the server.'
@@ -53,6 +66,11 @@ Lag:
 Help:
   default:
   - '&e<>&7 Optional &e() &7Required'
-  - '&e/test worlds&f- Open world management GUI'
-  - '&e/test entities <World>&f- Open entity management GUI'
-  - '&e/test lag [Milliseconds] &f- Artificially lags the server'
+  - '&e/manage worlds&f- Open world management GUI'
+  - '&e/manage entities <World>&f- Open entity management GUI'
+  - '&e/manage lag [Milliseconds] &f- Artificially lags the server'
+  give:
+  - '&e<>&7 Optional &e() &7Required'
+  - '&f/give [&eplayer&7|&eall&7|&eworld&7|&eradius&7|&epermission&7] [[&bitem&7<:&9damage/data&7>|&ehand&7|&einventory&7|&eskull:name&7]|Custom
+    Kit] <&camount&7> <[&9enchantment&7]:<&3level&7>> <&dname&7:[&4name&7]> &8<unbreakable>'
+  - '&f/give examples &7- Lists examples'

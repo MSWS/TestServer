@@ -1,40 +1,46 @@
-package org.mswsplex.testserver.events;
+package org.mswsplex.servermanager.events;
 
 import java.io.File;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
+import org.bukkit.DyeColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Sheep;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
-import org.mswsplex.testserver.managers.PlayerManager;
-import org.mswsplex.testserver.msws.Main;
-import org.mswsplex.testserver.utils.MSG;
-import org.mswsplex.testserver.utils.Utils;
+import org.mswsplex.servermanager.managers.PlayerManager;
+import org.mswsplex.servermanager.msws.ServerManager;
+import org.mswsplex.servermanager.utils.MSG;
+import org.mswsplex.servermanager.utils.NBTEditor;
+import org.mswsplex.servermanager.utils.Utils;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 
 public class Events implements Listener {
-	private Main plugin;
+	private ServerManager plugin;
 
-	public Events(Main plugin) {
+	public Events(ServerManager plugin) {
 		this.plugin = plugin;
 		Bukkit.getPluginManager().registerEvents(this, this.plugin);
 	}
@@ -94,7 +100,7 @@ public class Events implements Listener {
 					mw.setHidden(!mw.isHidden());
 					soundType = mw.isHidden() ? "enable" : "disable";
 					break;
-				case"pvp":
+				case "pvp":
 					mw.setPVPMode(!mw.isPVPEnabled());
 					soundType = mw.isPVPEnabled() ? "enable" : "disable";
 					break;
@@ -139,6 +145,144 @@ public class Events implements Listener {
 			player.openInventory(Utils.getGameruleGUI(player, world));
 			PlayerManager.setInfo(player, "openInventory", "gameruleViewer");
 		}
+		if (openInventory.equals("colorSelector")) {
+			event.setCancelled(true);
+			if (item.getType() != Material.WOOL) {
+				player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
+				return;
+			}
+			if (!item.hasItemMeta())
+				return;
+			String uuid = PlayerManager.getString(player, "managingEntity");
+			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+			Entity ent = null;
+			for (Entity e : world.getEntities()) {
+				if (e.getUniqueId().toString().equals(uuid)) {
+					ent = e;
+					break;
+				}
+			}
+			if (ent == null) {
+				MSG.tell(player, MSG.getString("Unable.Entity", "Unable to manage that entity, reason: %reason%")
+						.replace("%reason%", "Entity not found"));
+				player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
+				player.closeInventory();
+				return;
+			}
+			int id = item.getDurability();
+			((Sheep) ent).setColor(DyeColor.values()[id]);
+			PlayerManager.setInfo(player, "ignoreClose", true);
+			player.openInventory(Utils.getWoolSelectionGUI(DyeColor.values()[id]));
+			// player.openInventory(
+			// Utils.getEntityManagerGUI(player, ent,
+			// ChatColor.stripColor(Utils.getCustomName(ent))));
+			player.playSound(player.getLocation(), Sound.NOTE_PLING, 2, 2);
+			PlayerManager.setInfo(player, "openInventory", "colorSelector");
+		}
+		if (openInventory.equals("entityManager")) {
+			event.setCancelled(true);
+			if (!item.hasItemMeta())
+				return;
+			String uuid = PlayerManager.getString(player, "managingEntity");
+			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+			Entity ent = null;
+			for (Entity e : world.getEntities()) {
+				if (e.getUniqueId().toString().equals(uuid)) {
+					ent = e;
+					break;
+				}
+			}
+			if (ent == null) {
+				MSG.tell(player, MSG.getString("Unable.Entity", "Unable to manage that entity, reason: %reason%")
+						.replace("%reason%", "Entity not found"));
+				player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
+				player.closeInventory();
+				return;
+			}
+			String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
+			Sound sound = Sound.CLICK;
+			Ageable age = null;
+			if (ent instanceof Ageable)
+				age = (Ageable) ent;
+			boolean reopen = true, close = false;
+			switch (name.toLowerCase()) {
+			case "teleport to":
+				PlayerManager.setInfo(player, "inventoryOnClose", null);
+				player.teleport(ent.getLocation());
+				reopen = false;
+				break;
+			case "teleport to you":
+				ent.teleport(player.getLocation());
+				sound = Sound.ENDERMAN_TELEPORT;
+				reopen = false;
+				break;
+			case "kill":
+				if (ent instanceof Player || (ent instanceof LivingEntity && ent.getLocation().getChunk().isLoaded())) {
+					((LivingEntity) ent).setHealth(0);
+				} else {
+					ent.remove();
+				}
+				sound = Sound.GHAST_DEATH;
+				reopen = false;
+				close = true;
+				break;
+			case "make baby":
+				age.setBaby();
+				sound = Sound.GHAST_SCREAM;
+				break;
+			case "make adult":
+				age.setAdult();
+				sound = Sound.VILLAGER_HAGGLE;
+				break;
+			case "modify health":
+				int diff = 0;
+				sound = Sound.BURP;
+				switch (event.getClick()) {
+				case SHIFT_LEFT:
+					diff = -10;
+					break;
+				case SHIFT_RIGHT:
+					diff = 10;
+					break;
+				case LEFT:
+					diff = -1;
+					break;
+				case RIGHT:
+					diff = 1;
+					break;
+				default:
+					break;
+				}
+				((LivingEntity) ent).setHealth(Math.min(Math.max(((LivingEntity) ent).getHealth() + diff, 0),
+						((LivingEntity) ent).getMaxHealth()));
+				if (ent.isDead())
+					close = true;
+				break;
+			case "change wool color":
+				PlayerManager.setInfo(player, "ignoreClose", true);
+				Sheep sheep = (Sheep) ent;
+				player.openInventory(Utils.getWoolSelectionGUI(sheep.getColor()));
+				close = false;
+				reopen = false;
+				sound = Sound.DIG_WOOL;
+				PlayerManager.setInfo(player, "openInventory", "colorSelector");
+				PlayerManager.setInfo(player, "inventoryOnClose", "entityManager");
+				break;
+			case "toggle ai":
+				Object ai = NBTEditor.getEntityTag(ent, "NoAI");
+				NBTEditor.setEntityTag(ent, (ai == null || (byte) ai == 0) ? 1 : 0, "NoAI");
+				break;
+			}
+			player.playSound(player.getLocation(), sound, 1, 2);
+			if (reopen && !close) {
+				PlayerManager.setInfo(player, "ignoreClose", true);
+				player.openInventory(
+						Utils.getEntityManagerGUI(player, ent, ChatColor.stripColor(Utils.getCustomName(ent))));
+				PlayerManager.setInfo(player, "openInventory", "entityManager");
+			}
+			if (close)
+				player.closeInventory();
+		}
 		if (openInventory.equals("entityViewer")) {
 			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
 			event.setCancelled(true);
@@ -178,29 +322,14 @@ public class Events implements Listener {
 			if (event.getClick() == ClickType.LEFT) {
 				player.teleport(ent);
 				return;
-			}
-			if (event.getClick() == ClickType.SHIFT_LEFT) {
-				ent.teleport(player);
+			} else if (event.getClick() == ClickType.RIGHT) {
+				PlayerManager.setInfo(player, "managingEntity", ent.getUniqueId().toString());
+				player.openInventory(Utils.getEntityManagerGUI(player, ent,
+						ChatColor.stripColor(item.getItemMeta().getDisplayName())));
+				player.playSound(player.getLocation(), Sound.CLICK, 2, 1);
+				PlayerManager.setInfo(player, "openInventory", "entityManager");
+				PlayerManager.setInfo(player, "inventoryOnClose", "entityViewer");
 				return;
-			}
-			if (event.getClick() == ClickType.RIGHT) {
-				if (ent instanceof Player) {
-					((LivingEntity) ent).damage(((LivingEntity) ent).getHealth());
-				} else {
-					ent.remove();
-				}
-				player.playSound(player.getLocation(), Sound.GHAST_DEATH, 2, 1f);
-			}
-			if (event.getClick() == ClickType.SHIFT_RIGHT) {
-				for (Entity e : world.getEntitiesByClass(ent.getClass())) {
-					if (e instanceof Player) {
-						((LivingEntity) e).damage(((LivingEntity) e).getHealth());
-					} else {
-						e.remove();
-					}
-				}
-				player.playSound(player.getLocation(), Sound.BAT_HURT, .5f, .1f);
-
 			}
 			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 				player.openInventory(Utils.getEntityViewerGUI(player, player.getWorld()));
@@ -329,10 +458,61 @@ public class Events implements Listener {
 	@EventHandler
 	public void onClose(InventoryCloseEvent event) {
 		Player player = (Player) event.getPlayer();
-		String openInventory = PlayerManager.getString(player, "openInventory");
+
+		String openInventory = PlayerManager.getString(player, "openInventory"),
+				nextInventory = PlayerManager.getString(player, "inventoryOnClose");
+
+		if (nextInventory != null) {
+			if (PlayerManager.getInfo(player, "ignoreClose") != null) {
+				PlayerManager.setInfo(player, "ignoreClose", null);
+				return;
+			}
+			Inventory inv = null;
+			World world;
+			PlayerManager.setInfo(player, "inventoryOnClose", null);
+			switch (nextInventory) {
+			case "entityManager":
+				String uuid = PlayerManager.getString(player, "managingEntity");
+				world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+				Entity ent = null;
+				for (Entity e : world.getEntities()) {
+					if (e.getUniqueId().toString().equals(uuid)) {
+						ent = e;
+						break;
+					}
+				}
+				inv = Utils.getEntityManagerGUI(player, ent, Utils.getCustomName(ent));
+				PlayerManager.setInfo(player, "inventoryOnClose", "entityViewer");
+				break;
+			case "entityViewer":
+				world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+				inv = Utils.getEntityViewerGUI(player, world);
+				break;
+			}
+			Inventory fInv = inv;
+			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+				player.openInventory(fInv);
+				PlayerManager.setInfo(player, "openInventory", nextInventory);
+			}, 1);
+			return;
+		}
 		if (openInventory == null)
 			return;
 		PlayerManager.setInfo(player, "openInventory", null);
+	}
+
+	@EventHandler
+	public void onInteractAtEntity(PlayerInteractAtEntityEvent event) {
+		Player player = event.getPlayer();
+		if (!player.isSneaking() || !player.hasPermission("manage.managebyclick"))
+			return;
+		player.playSound(player.getLocation(), Sound.SILVERFISH_HIT, 2, 1);
+		PlayerManager.setInfo(player, "managingEntity", event.getRightClicked().getUniqueId() + "");
+		PlayerManager.setInfo(player, "openInventory", "entityManager");
+		PlayerManager.setInfo(player, "managingWorld", player.getWorld().getName() + "");
+
+		player.openInventory(Utils.getEntityManagerGUI(player, event.getRightClicked(),
+				ChatColor.stripColor(Utils.getCustomName(event.getRightClicked()))));
 	}
 
 	@EventHandler
@@ -358,4 +538,5 @@ public class Events implements Listener {
 			lent.getWorld().playSound(lent.getLocation(), Sound.CHICKEN_EGG_POP, 2, .1f);
 		}
 	}
+
 }

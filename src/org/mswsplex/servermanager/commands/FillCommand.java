@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.commands;
+package org.mswsplex.servermanager.commands;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,22 +10,30 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.mswsplex.testserver.managers.PlayerManager;
-import org.mswsplex.testserver.msws.Main;
-import org.mswsplex.testserver.utils.Cuboid;
-import org.mswsplex.testserver.utils.MSG;
-import org.mswsplex.testserver.utils.Utils;
+import org.mswsplex.servermanager.managers.PlayerManager;
+import org.mswsplex.servermanager.msws.ServerManager;
+import org.mswsplex.servermanager.utils.Cuboid;
+import org.mswsplex.servermanager.utils.MSG;
+import org.mswsplex.servermanager.utils.Utils;
 
 public class FillCommand implements CommandExecutor, TabCompleter {
 
-	private Main plugin;
+	private ServerManager plugin;
 
-	public FillCommand(Main plugin) {
+	/**
+	 * Permission: manage.command.fill
+	 * @param plugin
+	 */
+	public FillCommand(ServerManager plugin) {
 		this.plugin = plugin;
-		this.plugin.getCommand("fill").setExecutor(this);
-		this.plugin.getCommand("fill").setTabCompleter(this);
+		PluginCommand cmd = plugin.getCommand("fill");
+		cmd.setExecutor(this);
+		cmd.setTabCompleter(this);
+		cmd.setPermission("manage.command.fill");
+		cmd.setPermissionMessage(MSG.noPermMessage());
 	}
 
 	@SuppressWarnings("deprecation")

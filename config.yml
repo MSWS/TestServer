@@ -22,3 +22,102 @@ Max:
   LagAmount:
     Confirm: 1000
     HardLimit: 5000
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+#
+#
+#                   SuperGive Configurations Below
+# (Download supergive here https://www.spigotmc.org/resources/54542/)
+#
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+#
+#REMEMBER! Do double '' whenever you use a regular ', for example, don't would have to be don''t
+Messages:
+  Prefix: '&9Give>&7'
+  NoPermission: '&7You do not have permission to do this.'
+  NoItemPerm: '&7You do not have permission to give &e%item%&7.'
+  Giver: '&7Gave &e%player% %amount% %item%&7.'
+  Receiver: '&7You received &e%amount% %item% &7from &e%player%&7.'
+  UnknownPlayer:
+  - '&7&e%amount% &7results for "&e%criteria%&7".'
+  - '&9Results> &7[&e%results%&7].'
+  #What will be between the player usernames/item lists
+  Separators:
+    PlayerList: '&7, &e'
+    ItemList: '&7, &e'
+  UnknownItem: '&7&cUnknown Item&7, &e%amount% &7possibilities: [&e%results%&7].'
+  UnknownAmount: '&7&cUnknown item amount&7, defaulting to 1.'
+  UnknownEnchant: '&7&cUnknown enchantments&7: %enchantName%'
+  MustBePlayer: '&7You must be a player.'
+  Reloaded: '&7Successfully reloaded!'
+  Air: '&7Really man? What are going to do with air?'
+  EmptyInventory: '&7Your inventory is empty.'
+  Blacklisted: '&7&c%item% &7is blacklisted.'
+DefaultAmo: 1
+MaxAmount: -1
+Blacklisted:
+- 'BEDROCK'
+- 'COMMAND'
+- 'MONSTER_EGG'
+#Only requirement is Icon, all others are optional
+CustomKit:
+  bankit:
+    item1:
+      Icon: 'DIAMOND_AXE'
+      Amount: 1
+      Damage: 0
+      Name: '&4&lBAN HAMMER'
+      Enchantments:
+        'sharpness': 100
+      Lore:
+      - '&4The ban hammer'
+      - '&4&lHAS SPOKEN'
+      Unbreakable: true
+    item2:
+      Icon: 'STICK'
+      Amount: 1
+      Name: '&c&lProblem Solver'
+      Enchantments:
+        'knockback': 200
+      Lore:
+      - '&dProblem?'
+  diamondarmor:
+    helmet:
+      Icon: 'DIAMOND_HELMET'
+    chestplate:
+      Icon: 'DIAMOND_CHESTPLATE'
+    leggings:
+      Icon: 'DIAMOND_LEGGINGS'
+    boots:
+      Icon: 'DIAMOND_BOOTS'
+  woolset:
+    white:
+      Icon: 'WOOL'
+      Amount: 64
+    red:
+      Icon: 'WOOL'
+      Amount: 64
+      Damage: 14
+    orange:
+      Icon: 'WOOL'
+      Amount: 64
+      Damage: 1
+    yellow:
+      Icon: 'WOOL'
+      Amount: 64
+      Damage: 4
+    green:
+      Icon: 'WOOL'
+      Amount: 64
+      Damage: 5
+    blue:
+      Icon: 'WOOL'
+      Amount: 64
+      Damage: 3
+    indigo:
+      Icon: 'WOOL'
+      Amount: 64
+      Damage: 2
+    violet:
+      Icon: 'WOOL'
+      Amount: 64
+      Damage: 10
