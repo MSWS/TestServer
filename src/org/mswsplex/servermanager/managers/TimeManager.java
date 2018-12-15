@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.managers;
+package org.mswsplex.servermanager.managers;
 
 public class TimeManager {
 	public static String getTime(Double mils) {

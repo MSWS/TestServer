@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.utils;
+package org.mswsplex.servermanager.utils;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

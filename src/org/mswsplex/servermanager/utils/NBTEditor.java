@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.utils;
+package org.mswsplex.servermanager.utils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

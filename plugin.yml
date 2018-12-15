@@ -1,24 +1,36 @@
-name: TestServer
-main: org.mswsplex.testserver.msws.Main
-version: 1.0.2
-description: Test Server Management
-softdepend: [Multiverse-Core]
+name: ServerManager
+main: org.mswsplex.servermanager.msws.ServerManager
+version: 1.1
+description: Server Management
+softdepend:
+- Multiverse-Core
 commands:
-   test:
-      usage: /<command>
-      description: Main Test Command
-   testworld:
-      usage: /<command> <Type/WorldName>
-      description: Create a test world or teleport to one
-   confirm:
-      usage: /<command>
-      description: Confirms a pending command
-   fill:
-      usage: /<command>
-      description: Vanilla MC Command but with better autotab
-   gamerules:
-      usage: /<command> <World>
-      description: View all gamerules of the world
-   forcefield:
-      usage: /<command> <Size>
-      description: Toggle forcefield
+  manage:
+    usage: /<command>
+    description: Main Test Command
+    aliases:
+    - test
+    - mng
+    - manageserver
+  testworld:
+    usage: /<command> <Type/WorldName>
+    description: Create a test world or teleport to one
+  confirm:
+    usage: /<command>
+    description: Confirms a pending command
+  fill:
+    usage: /<command>
+    description: Vanilla MC Command but with better autotab
+  gamerules:
+    usage: /<command> <World>
+    description: View all gamerules of the world
+    aliases:
+    - rules
+    - grules
+  forcefield:
+    usage: /<command> <Size>
+    description: Toggle forcefield
+  give:
+    usage: /<command> [Item] [Amount] <Player>
+    description: Overkill give command
+    aliases: [g]

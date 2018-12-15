@@ -1,19 +1,26 @@
-package org.mswsplex.testserver.commands;
+package org.mswsplex.servermanager.commands;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
-import org.mswsplex.testserver.managers.PlayerManager;
-import org.mswsplex.testserver.msws.Main;
-import org.mswsplex.testserver.utils.MSG;
+import org.mswsplex.servermanager.managers.PlayerManager;
+import org.mswsplex.servermanager.msws.ServerManager;
+import org.mswsplex.servermanager.utils.MSG;
 
 public class ConfirmCommand implements CommandExecutor {
-	private Main plugin;
 
-	public ConfirmCommand(Main plugin) {
-		this.plugin = plugin;
-		this.plugin.getCommand("confirm").setExecutor(this);
+	/**
+	 * Permission: manage.command.confirm
+	 * 
+	 * @param plugin
+	 */
+	public ConfirmCommand(ServerManager plugin) {
+		PluginCommand cmd = plugin.getCommand("confirm");
+		cmd.setExecutor(this);
+		cmd.setPermission("manage.command.confirm");
+		cmd.setPermissionMessage(MSG.noPermMessage());
 	}
 
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

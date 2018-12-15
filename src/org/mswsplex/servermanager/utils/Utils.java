@@ -1,13 +1,19 @@
-package org.mswsplex.testserver.utils;
+package org.mswsplex.servermanager.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -19,25 +25,27 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Sheep;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.mswsplex.testserver.managers.PlayerManager;
-import org.mswsplex.testserver.msws.Main;
+import org.mswsplex.servermanager.managers.PlayerManager;
+import org.mswsplex.servermanager.msws.ServerManager;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 
 public class Utils {
-	public static Main plugin;
+	public static ServerManager plugin;
 
 	public Utils() {
 		MSG.log("utils initialized");
@@ -404,10 +412,10 @@ public class Utils {
 	}
 
 	/**
-	 * if oldVer is < newVer, both versions can only have numbers and .'s Outputs:
+	 * if oldVer is < newVer, 1 if oldVer is = newVer, 0 if oldVer is > newVer, -1
 	 * 5.5, 10.3 | true 2.3.1, 3.1.4.6 | true 1.2, 1.1 | false
 	 **/
-	public static Boolean outdated(String oldVer, String newVer) {
+	public static int outdated(String oldVer, String newVer) {
 		oldVer = oldVer.replace(".", "");
 		newVer = newVer.replace(".", "");
 		Double oldV = null, newV = null;
@@ -416,14 +424,14 @@ public class Utils {
 			newV = Double.valueOf(newVer);
 		} catch (Exception e) {
 			MSG.log("&cError! &7Versions incompatible.");
-			return false;
+			return 0;
 		}
 		if (oldVer.length() > newVer.length()) {
 			newV = newV * (10 * (oldVer.length() - newVer.length()));
 		} else if (oldVer.length() < newVer.length()) {
 			oldV = oldV * (10 * (newVer.length() - oldVer.length()));
 		}
-		return oldV < newV;
+		return oldV.equals(newV) ? 0 : oldV < newV ? 1 : -1;
 	}
 
 	public static boolean isMaterial(String name) {
@@ -431,6 +439,149 @@ public class Utils {
 			if (mat.toString().equals(name))
 				return true;
 		return false;
+	}
+
+	public static Inventory getEntityManagerGUI(Player player, Entity ent) {
+		return getEntityManagerGUI(player, ent, MSG.camelCase(ent.getType() + ""));
+	}
+
+	@SuppressWarnings("deprecation")
+	public static Inventory getEntityManagerGUI(Player player, Entity ent, String titleName) {
+		Inventory inv = Bukkit.createInventory(null, 3 * 9, "Managing " + titleName);
+		inv.setItem(10, quickItem(Material.ENDER_PEARL, "&a&lTeleport To"));
+		inv.setItem(11, quickItem(Material.FISHING_ROD, "&a&lTeleport To You"));
+		inv.setItem(12, quickItem(Material.DIAMOND_SWORD, "&c&lKill"));
+		if (ent instanceof Ageable) {
+			if (((Ageable) ent).isAdult()) {
+				inv.setItem(13, quickItem(Material.EGG, "&b&lMake Baby"));
+			} else {
+				inv.setItem(13, quickItem(Material.IRON_PICKAXE, "&b&lMake Adult"));
+			}
+		}
+
+		if (ent instanceof LivingEntity)
+			inv.setItem(14, quickItem(Material.GOLDEN_APPLE, "&a&lModify Health", "&a&lCurrent Health: &a"
+					+ ((LivingEntity) ent).getHealth() + "/" + ((LivingEntity) ent).getMaxHealth()));
+		if (!(ent instanceof Player)) {
+			Object ai = NBTEditor.getEntityTag(ent, "NoAI");
+
+			inv.setItem(15, quickItem((ai == null || (byte) ai == 0) ? Material.BOOK : Material.DIRT, "&b&lToggle AI",
+					(ai == null || (byte) ai == 0) ? "&aAI Enabled" : "&cAI Disabled"));
+		}
+		if (ent instanceof Sheep) {
+			short dyeData = ((Sheep) ent).getColor().getDyeData();
+			inv.setItem(16,
+					quickItem(Material.WOOL, ((Sheep) ent).getColor().getData(),
+							colorByWoolData(dyeData) + "&lChange Wool Color",
+							"&7Current Color: " + MSG.camelCase(((Sheep) ent).getColor().toString())));
+		}
+
+		for (int i = 0; i < inv.getSize(); i++) {
+			if (!(inv.getItem(i) == null || inv.getItem(i).getType() == Material.AIR))
+				continue;
+			if (i < 9 || i % 9 == 0 || i % 9 == 8 || i > inv.getSize() - 9) {
+				inv.setItem(i, quickItem(Material.STAINED_GLASS_PANE, (short) 11, "", (String[]) null));
+			}
+		}
+		return inv;
+	}
+
+	@SuppressWarnings("deprecation")
+	public static Inventory getWoolSelectionGUI(DyeColor activeColor) {
+		Inventory inv = Bukkit.createInventory(null, 5 * 9, "Select a Color");
+		for (int i = 0; i < inv.getSize(); i++) {
+			if (!(inv.getItem(i) == null || inv.getItem(i).getType() == Material.AIR))
+				continue;
+			if (i < 9 || i % 9 == 0 || i % 9 == 8 || i > inv.getSize() - 9) {
+				inv.setItem(i, quickItem(Material.STAINED_GLASS_PANE, (short) 11, "", (String[]) null));
+			}
+		}
+		int slot = 0;
+		for (int i = 0; i < DyeColor.values().length; i++) {
+			while (inv.getItem(slot) != null && inv.getItem(slot).getType() != Material.AIR) {
+				slot++;
+			}
+			ItemStack item = new ItemStack(Material.WOOL);
+			item.setDurability((short) i);
+			if (activeColor.equals(DyeColor.values()[i])) {
+				item.addUnsafeEnchantment(Enchantment.ARROW_FIRE, 0);
+			}
+			ItemMeta meta = item.getItemMeta();
+			meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+			meta.setDisplayName(MSG.color(colorByWoolData(DyeColor.values()[i].getDyeData()) + "&l"
+					+ MSG.camelCase(DyeColor.values()[i] + "") + " Color"));
+			item.setItemMeta(meta);
+			inv.setItem(slot, item);
+			slot++;
+		}
+		return inv;
+	}
+
+	static String colorByWoolData(short data) {
+		switch ((data) == -1 ? 15 : (data % 16)) {
+		case 12:
+			return "&b";
+		case 11:
+			return "&e";
+		case 10:
+			return "&a";
+		case 9:
+			return "&d";
+		case 8:
+			return "&8";
+		case 7:
+			return "&7";
+		case 6:
+			return "&3";
+		case 5:
+			return "&5";
+		case 4:
+			return "&9";
+		case 3:
+			return "&6";
+		case 2:
+			return "&2";
+		case 1:
+			return "&4";
+		case 0:
+			return "&0";
+		case 15:
+			return "&f";
+		case 14:
+			return "&6";
+		case 13:
+			return "&d";
+		}
+		return "";
+	}
+
+	public static String getCustomName(Entity ent) {
+		String prefix = "&9&l", suffix = "", result = "";
+		if (ent instanceof Player) {
+			suffix = " (" + ent.getName() + ")";
+			prefix = "&6&l";
+		} else if (ent instanceof LivingEntity && ent.getType() != EntityType.ARMOR_STAND) {
+			// item.setDurability((short) ent.getType().getTypeId());
+			prefix = "&a&l";
+		} else if (ent instanceof Item) {
+			suffix = " (Item)";
+			prefix = "&7&l";
+		} else if (ent instanceof FallingBlock) {
+			prefix = "&8&l";
+		} else {
+			try {
+				prefix = "&b&l";
+			} catch (Exception e) {
+				prefix = "&e&l";
+			}
+		}
+		if (ent.getCustomName() != null)
+			suffix = " (" + ent.getCustomName() + ")";
+		result = prefix + MSG.camelCase(ent.getType() + "") + suffix;
+		if (ent instanceof Item) {
+			result = prefix + MSG.camelCase(((Item) ent).getItemStack().getType() + "") + suffix;
+		}
+		return MSG.color(result);
 	}
 
 	@SuppressWarnings("deprecation")
@@ -462,52 +613,35 @@ public class Utils {
 				continue;
 			ItemStack item = new ItemStack(Material.MONSTER_EGG);
 			Entity ent = entities.get(pos);
-			String prefix = "&9&l", suffix = "", type = "Unknown";
+			String type = "Unknown";
 			if (ent instanceof Player) {
 				item.setType(Material.SKULL_ITEM);
 				item.setDurability((short) 3);
 				SkullMeta meta = (SkullMeta) item.getItemMeta();
 				meta.setOwner(ent.getName());
 				item.setItemMeta(meta);
-				suffix = " (" + ent.getName() + ")";
-				prefix = "&6&l";
 				type = "Player";
 			} else if (ent instanceof LivingEntity && ent.getType() != EntityType.ARMOR_STAND) {
-				try {
-					item.setDurability((short) ent.getType().getTypeId());
-					prefix = "&a&l";
-					type = "Living Entity";
-				} catch (IllegalArgumentException ee) {
-				}
+				item.setDurability((short) ent.getType().getTypeId());
+				type = "Living Entity";
 			} else if (ent instanceof Item) {
 				item.setType(((Item) ent).getItemStack().getType());
 				item.setAmount(((Item) ent).getItemStack().getAmount());
-				suffix = " (Item)";
-				prefix = "&7&l";
 				type = "Dropped Item";
 			} else if (ent instanceof FallingBlock) {
 				item.setType(((FallingBlock) ent).getMaterial());
 				type = "Falling Block";
-				prefix = "&8&l";
 			} else {
 				try {
 					item.setType(Material.valueOf(ent.getType() + ""));
-					prefix = "&b&l";
 					type = "Miscellaneous";
 				} catch (Exception e) {
 					item.setType(entityToMat(ent.getType()));
-					prefix = "&e&l";
 					type = "Entity";
 				}
 			}
 			ItemMeta meta = item.getItemMeta();
-			if (ent.getCustomName() != null)
-				suffix = " (" + ent.getCustomName() + ")";
-			meta.setDisplayName(MSG.color(prefix + MSG.camelCase(ent.getType() + "")) + suffix);
-			if (ent instanceof Item) {
-				meta.setDisplayName(
-						MSG.color(prefix + MSG.camelCase(((Item) ent).getItemStack().getType() + "")) + suffix);
-			}
+			meta.setDisplayName(getCustomName(ent));
 //			if ((ent.getType()+"").contains(".")) {
 //				meta.setDisplayName(MSG.color(
 //						prefix + MSG.camelCase(ent.getName().split("\\.")[ent.getName().split("\\.").length - 1]))
@@ -542,10 +676,13 @@ public class Utils {
 
 			lore.add("");
 
-			lore.add(MSG.color("&e&lLeft-Click &eto teleport to"));
-			lore.add(MSG.color("&e&lShift-Left &eClick to teleport to you"));
-			lore.add(MSG.color("&e&lRight-Click &eto kill"));
-			lore.add(MSG.color("&e&lShift-Right &eClick to kill all"));
+//			lore.add(MSG.color("&e&lLeft-Click &eto teleport to"));
+//			lore.add(MSG.color("&e&lShift-Left &eClick to teleport to you"));
+//			lore.add(MSG.color("&e&lRight-Click &eto kill"));
+//			lore.add(MSG.color("&e&lShift-Right &eClick to kill all"));
+
+			lore.add(MSG.color("&e&lLeft-Click &6&lTELEPORT"));
+			lore.add(MSG.color("&e&lRight-Click &a&lMANAGE"));
 
 			meta.setLore(lore);
 			item.setItemMeta(meta);
@@ -739,14 +876,14 @@ public class Utils {
 			List<String> lore = new ArrayList<>();
 			if (entries.get(res) instanceof Boolean) {
 				lore.add(MSG.color("&e" + MSG.TorF(Boolean.valueOf(entries.get(res) + ""))));
-				if((Boolean)entries.get(res)) {
+				if ((Boolean) entries.get(res)) {
 					item.setAmount(2);
 				}
 			} else {
 				if (res.equals("Player Limit")) {
 					lore.add(MSG.color(
 							"&e" + MSG.camelCase((int) entries.get(res) == -1 ? "None" : entries.get(res) + "")));
-					item.setAmount(Math.max(1,(int) entries.get(res)));
+					item.setAmount(Math.max(1, (int) entries.get(res)));
 				} else {
 					lore.add(MSG.color("&e" + MSG.camelCase(entries.get(res) + "")));
 				}
@@ -877,5 +1014,122 @@ public class Utils {
 		if (world != null && Bukkit.getWorlds().indexOf(world) < 3)
 			return true;
 		return false;
+	}
+
+	public static String getSpigotVersion(int id) {
+		try {
+			HttpsURLConnection con = (HttpsURLConnection) new URL(
+					"https://api.spigotmc.org/legacy/update.php?resource=" + id).openConnection();
+			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+				return buffer.readLine();
+			} catch (Exception ex) {
+			}
+		} catch (Exception e) {
+		}
+		return null;
+	}
+
+	static ItemStack quickItem(Material type, String name) {
+		return quickItem(type, 0, (short) 0, name, (String[]) null);
+	}
+
+	static ItemStack quickItem(Material type, String name, String... lore) {
+		return quickItem(type, 0, (short) 0, name, lore);
+	}
+
+	static ItemStack quickItem(Material type, short damage, String name, String... lore) {
+		return quickItem(type, 1, damage, name, lore);
+	}
+
+	static ItemStack quickItem(Material type, int amount, String name, String... lore) {
+		return quickItem(type, amount, (short) 0, name, lore);
+	}
+
+	static ItemStack quickItem(Material type, int amount, short damage, String name, String... lore) {
+		ItemStack stack = new ItemStack(type);
+		stack.setDurability(damage);
+		ItemMeta meta = stack.getItemMeta();
+		meta.setDisplayName(MSG.color(name));
+		if (lore != null) {
+			List<String> tmp = new ArrayList<>();
+			for (String res : lore)
+				tmp.add(MSG.color("&r" + res));
+			meta.setLore(tmp);
+		}
+		stack.setItemMeta(meta);
+		return stack;
+	}
+
+	public static String getEnchant(String name) {
+		switch (name.toLowerCase().replace("_", "")) {
+		case "power":
+			return "ARROW_DAMAGE";
+		case "flame":
+			return "ARROW_FIRE";
+		case "infinity":
+		case "infinite":
+			return "ARROW_INFINITE";
+		case "punch":
+		case "arrowkb":
+			return "ARROW_KNOCKBACK";
+		case "sharpness":
+			return "DAMAGE_ALL";
+		case "arthropods":
+		case "spiderdamage":
+		case "baneofarthropods":
+			return "DAMAGE_ARTHORPODS";
+		case "smite":
+			return "DAMAGE_UNDEAD";
+		case "depthstrider":
+		case "waterwalk":
+			return "DEPTH_STRIDER";
+		case "efficiency":
+			return "DIG_SPEED";
+		case "unbreaking":
+			return "DURABILITY";
+		case "fireaspect":
+		case "fire":
+			return "FIRE_ASPECT";
+		case "knockback":
+		case "kb":
+			return "KNOCKBACK";
+		case "fortune":
+			return "LOOT_BONUS_BLOCKS";
+		case "looting":
+			return "LOOT_BONUS_MOBS";
+		case "luck":
+			return "LUCK";
+		case "lure":
+			return "LURE";
+		case "waterbreathing":
+		case "respiration":
+			return "OXYGEN";
+		case "prot":
+		case "protection":
+			return "PROTECTION_ENVIRONMENTAL";
+		case "blastprot":
+		case "blastprotection":
+			return "PROTECTION_EXPLOSIONS";
+		case "feather":
+		case "featherfalling":
+			return "PROTECTION_FALL";
+		case "fireprot":
+		case "fireprotection":
+			return "PROTECTION_FIRE";
+		case "projectileprot":
+		case "projectileprotection":
+		case "projprot":
+			return "PROTECTION_PROJECTILE";
+		case "silktouch":
+		case "silk":
+			return "SILK_TOUCH";
+		case "thorns":
+			return "THORNS";
+		case "aquaaffinity":
+		case "aqua":
+		case "waterworker":
+			return "WATER_WORKER";
+		}
+		return name.toUpperCase();
 	}
 }

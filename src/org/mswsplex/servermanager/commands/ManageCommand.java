@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.commands;
+package org.mswsplex.servermanager.commands;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -9,24 +9,32 @@ import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.mswsplex.testserver.managers.PlayerManager;
-import org.mswsplex.testserver.msws.Main;
-import org.mswsplex.testserver.utils.MSG;
-import org.mswsplex.testserver.utils.Utils;
+import org.mswsplex.servermanager.managers.PlayerManager;
+import org.mswsplex.servermanager.msws.ServerManager;
+import org.mswsplex.servermanager.utils.MSG;
+import org.mswsplex.servermanager.utils.Utils;
 
-public class TestCommand implements CommandExecutor, TabCompleter {
-	private Main plugin;
+public class ManageCommand implements CommandExecutor, TabCompleter {
+	private ServerManager plugin;
 
 	private int lag;
 
-	public TestCommand(Main plugin) {
+	/**
+	 * Permission: manage.command Subperms: manage.command.[perm]
+	 * 
+	 * @param plugin
+	 */
+	public ManageCommand(ServerManager plugin) {
 		this.plugin = plugin;
-		plugin.getCommand("test").setExecutor(this);
-		plugin.getCommand("test").setTabCompleter(this);
-
+		PluginCommand cmd = plugin.getCommand("manage");
+		cmd.setExecutor(this);
+		cmd.setTabCompleter(this);
+		cmd.setPermission("manage.command");
+		cmd.setPermissionMessage(MSG.noPermMessage());
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin, () -> {
 			if (lag > 0)
 				try {
@@ -43,6 +51,9 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 			return true;
 		}
 		Player player;
+		if (!sender.hasPermission("manage.command." + args[0])) {
+			MSG.noPerm(sender);
+		}
 		switch (args[0].toLowerCase()) {
 		case "reload":
 			plugin.configYml = new File(plugin.getDataFolder(), "config.yml");
@@ -151,14 +162,15 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 	public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
 		List<String> result = new ArrayList<>();
 		if (args.length <= 1) {
-			for (String res : new String[] { "worlds", "entities", "lag" }) {
-				if (res.toLowerCase().startsWith(args[0].toLowerCase())) {
+			for (String res : new String[] { "worlds", "entities", "lag", "reload", "reset" }) {
+				if (sender.hasPermission("manage.command." + res)
+						&& res.toLowerCase().startsWith(args[0].toLowerCase())) {
 					result.add(res);
 				}
 			}
 		}
 		if (args.length > 1 && args.length < 3) {
-			if (args[0].equalsIgnoreCase("entities")) {
+			if (args[0].equalsIgnoreCase("entities") && sender.hasPermission("manage.command.entities")) {
 				for (World w : Bukkit.getWorlds()) {
 					if (w.getName().toLowerCase().startsWith(args[1].toLowerCase()))
 						result.add(w.getName());
@@ -181,7 +193,7 @@ public class TestCommand implements CommandExecutor, TabCompleter {
 			}
 			return col;
 		} catch (Exception e) {
-			MSG.log("[WARNING] Configuration is outdated, please type /test reset to reset the config");
+			MSG.log("[WARNING] Configuration is outdated, please type /manage reset to reset the config");
 		}
 		if (amo > 150) {
 			return "&4";

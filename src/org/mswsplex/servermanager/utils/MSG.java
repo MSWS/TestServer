@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.utils;
+package org.mswsplex.servermanager.utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +9,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.mswsplex.testserver.msws.Main;
+import org.mswsplex.servermanager.msws.ServerManager;
 
 public class MSG {
-	public static Main plugin;
+	public static ServerManager plugin;
 
 	/**
 	 * Returns the string with &'s being §
@@ -55,7 +55,13 @@ public class MSG {
 	 * @return
 	 */
 	public static String getString(String id, String def) {
-		return plugin.lang.contains(id) ? plugin.lang.getString(id) : "[" + id + "] " + def;
+		if (plugin.lang.contains(id)) {
+			return plugin.lang.getString(id);
+		} else {
+			MSG.log("[WARNING] Language file is corrupted or out of date");
+			MSG.log("[WARNING] Please type /manage reset to reset lang.yml");
+			return "[" + id + "] " + def;
+		}
 	}
 
 	/**
@@ -114,6 +120,10 @@ public class MSG {
 	 */
 	public static void noPerm(CommandSender sender) {
 		tell(sender, getString("NoPermission", "Insufficient Permissions"));
+	}
+
+	public static String noPermMessage() {
+		return color(getString("NoPermission", "Insufficient Permissions"));
 	}
 
 	/**
@@ -185,7 +195,8 @@ public class MSG {
 			tell(sender, res);
 		}
 		if (command.equals("default")) // TODO
-			tell(sender, "&b&lTestServer &ev" + plugin.getDescription().getVersion() + " &7created by &bMSWS");
+			tell(sender, "&b&l" + plugin.getDescription().getName() + " &ev" + plugin.getDescription().getVersion()
+					+ " &7created by &bMSWS");
 	}
 
 	/**

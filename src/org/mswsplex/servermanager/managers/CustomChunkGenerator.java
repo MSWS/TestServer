@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.managers;
+package org.mswsplex.servermanager.managers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,7 +11,7 @@ import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
-import org.mswsplex.testserver.utils.MSG;
+import org.mswsplex.servermanager.utils.MSG;
 
 public class CustomChunkGenerator extends ChunkGenerator {
 	private Material[] layers;

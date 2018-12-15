@@ -1,4 +1,4 @@
-package org.mswsplex.testserver.commands;
+package org.mswsplex.servermanager.commands;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,22 +11,28 @@ import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.mswsplex.testserver.managers.CustomChunkGenerator;
-import org.mswsplex.testserver.managers.PlayerManager;
-import org.mswsplex.testserver.msws.Main;
-import org.mswsplex.testserver.utils.MSG;
-import org.mswsplex.testserver.utils.Utils;
-import org.mswsplex.testserver.utils.WorldType;
+import org.mswsplex.servermanager.managers.CustomChunkGenerator;
+import org.mswsplex.servermanager.managers.PlayerManager;
+import org.mswsplex.servermanager.msws.ServerManager;
+import org.mswsplex.servermanager.utils.MSG;
+import org.mswsplex.servermanager.utils.Utils;
+import org.mswsplex.servermanager.utils.WorldType;
 
 public class TestworldCommand implements CommandExecutor, TabCompleter {
-	private Main plugin;
 
-	public TestworldCommand(Main plugin) {
-		this.plugin = plugin;
-
-		this.plugin.getCommand("testworld").setExecutor(this);
+	/**
+	 * Permission: manage.command.testworld
+	 * 
+	 * @param plugin
+	 */
+	public TestworldCommand(ServerManager plugin) {
+		PluginCommand cmd = plugin.getCommand("testworld");
+		cmd.setExecutor(this);
+		cmd.setPermission("manage.command.testworld");
+		cmd.setPermissionMessage(MSG.noPermMessage());
 	}
 
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
