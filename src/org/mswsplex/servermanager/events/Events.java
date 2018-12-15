@@ -13,10 +13,18 @@ import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.ComplexEntityPart;
+import org.bukkit.entity.Creature;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Sheep;
+import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Skeleton.SkeletonType;
+import org.bukkit.entity.Slime;
+import org.bukkit.entity.Villager;
+import org.bukkit.entity.Villager.Profession;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
@@ -145,6 +153,36 @@ public class Events implements Listener {
 			player.openInventory(Utils.getGameruleGUI(player, world));
 			PlayerManager.setInfo(player, "openInventory", "gameruleViewer");
 		}
+		if (openInventory.equals("professionSelector")) {
+			event.setCancelled(true);
+			if (!item.hasItemMeta() || !item.getItemMeta().hasDisplayName())
+				return;
+			String uuid = PlayerManager.getString(player, "managingEntity");
+			World world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
+			Entity ent = null;
+			for (Entity e : world.getEntities()) {
+				if (e.getUniqueId().toString().equals(uuid)) {
+					ent = e;
+					break;
+				}
+			}
+			if (ent == null) {
+				MSG.tell(player, MSG.getString("Unable.Entity", "Unable to manage that entity, reason: %reason%")
+						.replace("%reason%", "Entity not found"));
+				player.playSound(player.getLocation(), Sound.ITEM_BREAK, .5f, .2f);
+				player.closeInventory();
+				return;
+			}
+			Profession prof = Profession
+					.valueOf(ChatColor.stripColor(item.getItemMeta().getDisplayName().toUpperCase()));
+			Villager villager = (Villager) ent;
+			villager.setProfession(prof);
+			PlayerManager.setInfo(player, "ignoreClose", true);
+			player.openInventory(Utils.getProfessionSelectionGUI(prof));
+			player.playSound(player.getLocation(), Sound.DOOR_CLOSE, 2, 2);
+			PlayerManager.setInfo(player, "openInventory", "professionSelector");
+
+		}
 		if (openInventory.equals("colorSelector")) {
 			event.setCancelled(true);
 			if (item.getType() != Material.WOOL) {
@@ -202,6 +240,7 @@ public class Events implements Listener {
 			String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
 			Sound sound = Sound.CLICK;
 			Ageable age = null;
+			int diff;
 			if (ent instanceof Ageable)
 				age = (Ageable) ent;
 			boolean reopen = true, close = false;
@@ -235,7 +274,7 @@ public class Events implements Listener {
 				sound = Sound.VILLAGER_HAGGLE;
 				break;
 			case "modify health":
-				int diff = 0;
+				diff = 0;
 				sound = Sound.BURP;
 				switch (event.getClick()) {
 				case SHIFT_LEFT:
@@ -271,6 +310,58 @@ public class Events implements Listener {
 			case "toggle ai":
 				Object ai = NBTEditor.getEntityTag(ent, "NoAI");
 				NBTEditor.setEntityTag(ent, (ai == null || (byte) ai == 0) ? 1 : 0, "NoAI");
+				sound = Sound.ZOMBIE_REMEDY;
+				break;
+			case "modify size":
+				sound = Sound.SLIME_WALK;
+				Slime slime = (Slime) ent;
+				diff = 0;
+				switch (event.getClick()) {
+				case SHIFT_LEFT:
+					diff = -10;
+					break;
+				case SHIFT_RIGHT:
+					diff = 10;
+					break;
+				case LEFT:
+					diff = -1;
+					break;
+				case RIGHT:
+					diff = 1;
+					break;
+				default:
+					break;
+				}
+				slime.setSize(Math.max(slime.getSize() + diff, 1));
+				break;
+			case "modify profession":
+				PlayerManager.setInfo(player, "ignoreClose", true);
+				Villager villager = (Villager) ent;
+				player.openInventory(Utils.getProfessionSelectionGUI(villager.getProfession()));
+				close = false;
+				reopen = false;
+				sound = Sound.ANVIL_USE;
+				PlayerManager.setInfo(player, "openInventory", "professionSelector");
+				PlayerManager.setInfo(player, "inventoryOnClose", "entityManager");
+				break;
+			case "toggle powered":
+				Creeper creeper = (Creeper) ent;
+				creeper.setPowered(!creeper.isPowered());
+				sound = Sound.EXPLODE;
+				break;
+			case "toggle skeleton type":
+				Skeleton skeleton = (Skeleton) ent;
+				skeleton.setSkeletonType(SkeletonType.values()[(skeleton.getSkeletonType().ordinal() + 1)
+						% SkeletonType.values().length]);
+				sound = Sound.SKELETON_DEATH;
+				break;
+			case "remove target":
+				Creature creature = (Creature) ent;
+				creature.setTarget(null);
+				sound = Sound.GLASS;
+				break;
+			default:
+				sound = Sound.ITEM_BREAK;
 				break;
 			}
 			player.playSound(player.getLocation(), sound, 1, 2);
@@ -463,6 +554,7 @@ public class Events implements Listener {
 				nextInventory = PlayerManager.getString(player, "inventoryOnClose");
 
 		if (nextInventory != null) {
+			// Should we ignore this time when the player "closes" the inventory?
 			if (PlayerManager.getInfo(player, "ignoreClose") != null) {
 				PlayerManager.setInfo(player, "ignoreClose", null);
 				return;
@@ -481,8 +573,9 @@ public class Events implements Listener {
 						break;
 					}
 				}
-				inv = Utils.getEntityManagerGUI(player, ent, Utils.getCustomName(ent));
-				PlayerManager.setInfo(player, "inventoryOnClose", "entityViewer");
+				inv = Utils.getEntityManagerGUI(player, ent, ChatColor.stripColor(Utils.getCustomName(ent)));
+				if (PlayerManager.getInfo(player, "openedEntityViewer") != null)
+					PlayerManager.setInfo(player, "inventoryOnClose", "entityViewer");
 				break;
 			case "entityViewer":
 				world = Bukkit.getWorld(PlayerManager.getString(player, "managingWorld"));
@@ -504,15 +597,42 @@ public class Events implements Listener {
 	@EventHandler
 	public void onInteractAtEntity(PlayerInteractAtEntityEvent event) {
 		Player player = event.getPlayer();
+		Entity ent = event.getRightClicked();
+		if (ent == null)
+			return;
 		if (!player.isSneaking() || !player.hasPermission("manage.managebyclick"))
 			return;
+		PlayerManager.setInfo(player, "openedEntityViewer", null);
 		player.playSound(player.getLocation(), Sound.SILVERFISH_HIT, 2, 1);
-		PlayerManager.setInfo(player, "managingEntity", event.getRightClicked().getUniqueId() + "");
-		PlayerManager.setInfo(player, "openInventory", "entityManager");
-		PlayerManager.setInfo(player, "managingWorld", player.getWorld().getName() + "");
+		event.setCancelled(true);
 
-		player.openInventory(Utils.getEntityManagerGUI(player, event.getRightClicked(),
-				ChatColor.stripColor(Utils.getCustomName(event.getRightClicked()))));
+		// If the entity that was clicked was a complexentitypart, set entity to its
+		// parent
+		// (this may happen for an enderdragon for example)
+		if (ent instanceof ComplexEntityPart) {
+			ComplexEntityPart cpart = (ComplexEntityPart) ent;
+			ent = (Entity) cpart.getParent();
+		}
+
+		final Entity e = ent;
+
+		if (ent instanceof Villager) {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+				player.closeInventory();
+				PlayerManager.setInfo(player, "managingEntity", e.getUniqueId() + "");
+				PlayerManager.setInfo(player, "openInventory", "entityManager");
+				PlayerManager.setInfo(player, "managingWorld", player.getWorld().getName() + "");
+
+				player.openInventory(Utils.getEntityManagerGUI(player, event.getRightClicked(),
+						ChatColor.stripColor(Utils.getCustomName(event.getRightClicked()))));
+			}, 1);
+		} else {
+			PlayerManager.setInfo(player, "managingEntity", e.getUniqueId() + "");
+			PlayerManager.setInfo(player, "openInventory", "entityManager");
+			PlayerManager.setInfo(player, "managingWorld", player.getWorld().getName() + "");
+
+			player.openInventory(Utils.getEntityManagerGUI(player, e, ChatColor.stripColor(Utils.getCustomName(e))));
+		}
 	}
 
 	@EventHandler

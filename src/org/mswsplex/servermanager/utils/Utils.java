@@ -26,6 +26,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Creature;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
@@ -33,6 +35,11 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Sheep;
+import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Skeleton.SkeletonType;
+import org.bukkit.entity.Slime;
+import org.bukkit.entity.Villager;
+import org.bukkit.entity.Villager.Profession;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -447,39 +454,86 @@ public class Utils {
 	@SuppressWarnings("deprecation")
 	public static Inventory getEntityManagerGUI(Player player, Entity ent, String titleName) {
 		Inventory inv = Bukkit.createInventory(null, 3 * 9, "Managing " + titleName);
-		inv.setItem(10, quickItem(Material.ENDER_PEARL, "&a&lTeleport To"));
-		inv.setItem(11, quickItem(Material.FISHING_ROD, "&a&lTeleport To You"));
-		inv.setItem(12, quickItem(Material.DIAMOND_SWORD, "&c&lKill"));
+		int pos = 10;
+		short damage = 11;
+		//inv.setItem(pos++, quickItem(Material.ENDER_PEARL, "&a&lTeleport To"));
+		inv.setItem(pos++, quickItem(Material.NAME_TAG, "&e&lAssign Custom Name"));
+		inv.setItem(pos++, quickItem(Material.FISHING_ROD, "&a&lTeleport To You"));
+		inv.setItem(pos++, quickItem(Material.DIAMOND_SWORD, "&c&lKill"));
 		if (ent instanceof Ageable) {
 			if (((Ageable) ent).isAdult()) {
-				inv.setItem(13, quickItem(Material.EGG, "&b&lMake Baby"));
+				inv.setItem(pos++, quickItem(Material.EGG, "&b&lMake Baby"));
 			} else {
-				inv.setItem(13, quickItem(Material.IRON_PICKAXE, "&b&lMake Adult"));
+				inv.setItem(pos++, quickItem(Material.IRON_PICKAXE, "&b&lMake Adult"));
+			}
+		}
+		if (ent instanceof LivingEntity) {
+			inv.setItem(pos++,
+					quickItem(Material.GOLDEN_APPLE, "&a&lModify Health",
+							"&a&lCurrent Health: &a" + ((LivingEntity) ent).getHealth() + "/"
+									+ ((LivingEntity) ent).getMaxHealth(),
+							"", "&e&lLeft Click &e[+1]", "&e&lRight Click &e[-1]", "", "&7(Shift for +-10)"));
+			if (!(ent instanceof Player)) {
+				Object ai = NBTEditor.getEntityTag(ent, "NoAI");
+				inv.setItem(pos++, quickItem((ai == null || (byte) ai == 0) ? Material.BOOK : Material.DIRT,
+						"&b&lToggle AI", (ai == null || (byte) ai == 0) ? "&aAI Enabled" : "&cAI Disabled"));
 			}
 		}
 
-		if (ent instanceof LivingEntity)
-			inv.setItem(14, quickItem(Material.GOLDEN_APPLE, "&a&lModify Health", "&a&lCurrent Health: &a"
-					+ ((LivingEntity) ent).getHealth() + "/" + ((LivingEntity) ent).getMaxHealth()));
-		if (!(ent instanceof Player)) {
-			Object ai = NBTEditor.getEntityTag(ent, "NoAI");
-
-			inv.setItem(15, quickItem((ai == null || (byte) ai == 0) ? Material.BOOK : Material.DIRT, "&b&lToggle AI",
-					(ai == null || (byte) ai == 0) ? "&aAI Enabled" : "&cAI Disabled"));
-		}
 		if (ent instanceof Sheep) {
 			short dyeData = ((Sheep) ent).getColor().getDyeData();
-			inv.setItem(16,
+			inv.setItem(pos++,
 					quickItem(Material.WOOL, ((Sheep) ent).getColor().getData(),
 							colorByWoolData(dyeData) + "&lChange Wool Color",
 							"&7Current Color: " + MSG.camelCase(((Sheep) ent).getColor().toString())));
+			damage = ((Sheep) ent).getColor().getData();
+		} else if (ent instanceof Slime) {
+			Slime slime = (Slime) ent;
+			inv.setItem(pos++,
+					quickItem(Material.SLIME_BALL, Math.max(slime.getSize(), 1), "&a&lModify Size",
+							"&2Current Size: " + slime.getSize(), "", "&e&lLeft Click &e[+1]", "&e&lRight Click &e[-1]",
+							"", "&7(Shift for +-10)"));
+		} else if (ent instanceof Villager) {
+			Villager villager = (Villager) ent;
+			inv.setItem(pos++, quickItem(Material.IRON_SPADE, "&a&lModify Profession",
+					"&2Current Proffesion: &a" + MSG.camelCase(villager.getProfession() + "")));
+		} else if (ent instanceof Creeper) {
+			Creeper creeper = (Creeper) ent;
+			ItemStack item = new ItemStack(Material.MONSTER_EGG);
+			item.setDurability((short) 50);
+			if (creeper.isPowered())
+				item.addUnsafeEnchantment(Enchantment.ARROW_INFINITE, 0);
+			ItemMeta meta = item.getItemMeta();
+			meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+			meta.setDisplayName(MSG.color((creeper.isPowered() ? "&c" : "&a") + "&lToggle Powered"));
+			meta.setLore(Arrays.asList(MSG.color("&eIs Powered: " + MSG.TorF(creeper.isPowered()))));
+			item.setItemMeta(meta);
+			inv.setItem(pos++, item);
+		} else if (ent instanceof Skeleton) {
+			Skeleton skeleton = (Skeleton) ent;
+			ItemStack item = new ItemStack(Material.SKULL_ITEM);
+			item.setDurability((short) skeleton.getSkeletonType().getId());
+			ItemMeta meta = item.getItemMeta();
+			meta.setDisplayName(MSG.color(
+					(skeleton.getSkeletonType() == SkeletonType.NORMAL ? "&f" : "&8") + "&lToggle Skeleton Type"));
+			meta.setLore(
+					Arrays.asList(MSG.color("&7Current Type: &f" + MSG.camelCase(skeleton.getSkeletonType() + ""))));
+			item.setItemMeta(meta);
+			inv.setItem(pos++, item);
+		}
+
+		if (ent instanceof Creature) {
+			Creature creature = (Creature) ent;
+			if (creature.getTarget() != null)
+				inv.setItem(pos++, quickItem(Material.FIREBALL, "&c&lRemove Target",
+						"&cCurrent Target: &4" + getCustomName(creature.getTarget())));
 		}
 
 		for (int i = 0; i < inv.getSize(); i++) {
 			if (!(inv.getItem(i) == null || inv.getItem(i).getType() == Material.AIR))
 				continue;
 			if (i < 9 || i % 9 == 0 || i % 9 == 8 || i > inv.getSize() - 9) {
-				inv.setItem(i, quickItem(Material.STAINED_GLASS_PANE, (short) 11, "", (String[]) null));
+				inv.setItem(i, quickItem(Material.STAINED_GLASS_PANE, damage, "", (String[]) null));
 			}
 		}
 		return inv;
@@ -492,7 +546,7 @@ public class Utils {
 			if (!(inv.getItem(i) == null || inv.getItem(i).getType() == Material.AIR))
 				continue;
 			if (i < 9 || i % 9 == 0 || i % 9 == 8 || i > inv.getSize() - 9) {
-				inv.setItem(i, quickItem(Material.STAINED_GLASS_PANE, (short) 11, "", (String[]) null));
+				inv.setItem(i, quickItem(Material.STAINED_GLASS_PANE, activeColor.getData(), "", (String[]) null));
 			}
 		}
 		int slot = 0;
@@ -516,7 +570,52 @@ public class Utils {
 		return inv;
 	}
 
-	static String colorByWoolData(short data) {
+	public static Inventory getProfessionSelectionGUI(Profession activeProfession) {
+		Inventory inv = Bukkit.createInventory(null, 3 * 9, "Select a Profession");
+		for (int i = 0; i < inv.getSize(); i++) {
+			if (!(inv.getItem(i) == null || inv.getItem(i).getType() == Material.AIR))
+				continue;
+			if (i < 9 || i % 9 == 0 || i % 9 == 8 || i > inv.getSize() - 9) {
+				inv.setItem(i, quickItem(Material.STAINED_GLASS_PANE, (short) 11, "", (String[]) null));
+			}
+		}
+		int slot = 0;
+		for (Profession prof : Profession.values()) {
+			while (inv.getItem(slot) != null && inv.getItem(slot).getType() != Material.AIR) {
+				slot++;
+			}
+			ItemStack item = new ItemStack(professionToMat(prof));
+			if (activeProfession.equals(prof)) {
+				item.addUnsafeEnchantment(Enchantment.ARROW_FIRE, 0);
+			}
+			ItemMeta meta = item.getItemMeta();
+			meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+			meta.setDisplayName(MSG.color("&e&l" + MSG.camelCase(prof + "")));
+			item.setItemMeta(meta);
+			inv.setItem(slot, item);
+			slot++;
+		}
+		return inv;
+	}
+
+	public static Material professionToMat(Profession prof) {
+		switch (prof) {
+		case FARMER:
+			return Material.IRON_HOE;
+		case LIBRARIAN:
+			return Material.BOOKSHELF;
+		case PRIEST:
+			return Material.BOOK;
+		case BLACKSMITH:
+			return Material.ANVIL;
+		case BUTCHER:
+			return Material.PORK;
+		default:
+			return Material.BARRIER;
+		}
+	}
+
+	public static String colorByWoolData(short data) {
 		switch ((data) == -1 ? 15 : (data % 16)) {
 		case 12:
 			return "&b";
@@ -1029,11 +1128,11 @@ public class Utils {
 	}
 
 	static ItemStack quickItem(Material type, String name) {
-		return quickItem(type, 0, (short) 0, name, (String[]) null);
+		return quickItem(type, 1, (short) 0, name, (String[]) null);
 	}
 
 	static ItemStack quickItem(Material type, String name, String... lore) {
-		return quickItem(type, 0, (short) 0, name, lore);
+		return quickItem(type, 1, (short) 0, name, lore);
 	}
 
 	static ItemStack quickItem(Material type, short damage, String name, String... lore) {
@@ -1045,7 +1144,7 @@ public class Utils {
 	}
 
 	static ItemStack quickItem(Material type, int amount, short damage, String name, String... lore) {
-		ItemStack stack = new ItemStack(type);
+		ItemStack stack = new ItemStack(type, amount);
 		stack.setDurability(damage);
 		ItemMeta meta = stack.getItemMeta();
 		meta.setDisplayName(MSG.color(name));

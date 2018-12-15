@@ -102,6 +102,7 @@ public class ManageCommand implements CommandExecutor, TabCompleter {
 			PlayerManager.setInfo(player, "page", 0);
 			player.openInventory(Utils.getEntityViewerGUI(player, world));
 			PlayerManager.setInfo(player, "openInventory", "entityViewer");
+			PlayerManager.setInfo(player, "openedEntityViewer", true);
 			PlayerManager.setInfo(player, "managingWorld", world.getName());
 			break;
 		case "lag":
