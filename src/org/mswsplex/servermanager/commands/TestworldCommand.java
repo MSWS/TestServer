@@ -13,15 +13,16 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.mswsplex.servermanager.managers.CustomChunkGenerator;
 import org.mswsplex.servermanager.managers.PlayerManager;
 import org.mswsplex.servermanager.msws.ServerManager;
 import org.mswsplex.servermanager.utils.MSG;
 import org.mswsplex.servermanager.utils.Utils;
-import org.mswsplex.servermanager.utils.WorldType;
 
 public class TestworldCommand implements CommandExecutor, TabCompleter {
+	ServerManager plugin;
 
 	/**
 	 * Permission: manage.command.testworld
@@ -29,6 +30,7 @@ public class TestworldCommand implements CommandExecutor, TabCompleter {
 	 * @param plugin
 	 */
 	public TestworldCommand(ServerManager plugin) {
+		this.plugin = plugin;
 		PluginCommand cmd = plugin.getCommand("testworld");
 		cmd.setExecutor(this);
 		cmd.setPermission("manage.command.testworld");
@@ -76,10 +78,23 @@ public class TestworldCommand implements CommandExecutor, TabCompleter {
 		case "amplified":
 			break;
 		default:
-			try {
-				layers = WorldType.valueOf(args[1].toUpperCase()).getLayers();
-			} catch (IllegalArgumentException e) {
-				layers = new Material[100];
+			ConfigurationSection custom = plugin.config.getConfigurationSection("CustomWorldTypes");
+			layers = new Material[100];
+			boolean skip = false;
+			if (custom != null) {
+				for (String type : custom.getKeys(false)) {
+					if (args[1].equalsIgnoreCase(type)) {
+						int pos = 0;
+						for (String mat : custom.getStringList(type)) {
+							layers[pos] = Material.valueOf(mat);
+							pos++;
+						}
+						skip = true;
+						break;
+					}
+				}
+			}
+			if (!skip) {
 				int pos = 0;
 				for (String res : args[1].split(",")) {
 					if (Utils.isMaterial(res.toUpperCase())) {
@@ -185,12 +200,15 @@ public class TestworldCommand implements CommandExecutor, TabCompleter {
 		} else {
 			if (args.length == 2) {
 				for (String res : new String[] { "Overworld", "Nether", "End", "Superflat", "Amplified" }) {
-					if (res.toLowerCase().startsWith(args[1]))
+					if (res.toLowerCase().startsWith(args[1].toLowerCase()))
 						result.add(res);
 				}
-				for (WorldType type : WorldType.values()) {
-					if (type.toString().toLowerCase().startsWith(args[1]) && result.size() < 10) {
-						result.add(MSG.camelCase(type.toString().toLowerCase()));
+				ConfigurationSection custom = plugin.config.getConfigurationSection("CustomWorldTypes");
+				if (custom != null) {
+					for (String type : custom.getKeys(false)) {
+						if (type.toLowerCase().startsWith(args[1].toLowerCase()) && result.size() < 10) {
+							result.add(type);
+						}
 					}
 				}
 			}

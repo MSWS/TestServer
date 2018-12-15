@@ -22,6 +22,16 @@ Max:
   LagAmount:
     Confirm: 1000
     HardLimit: 5000
+CustomWorldTypes:
+  Ores:
+  - 'DIAMOND_ORE'
+  - 'EMERALD_ORE'
+  - 'QUARTZ_ORE'
+  - 'GOLD_ORE'
+  - 'LAPIS_ORE'
+  - 'REDSTONE_ORE'
+  - 'IRON_ORE'
+  - 'COAL_ORE'
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 #
 #
