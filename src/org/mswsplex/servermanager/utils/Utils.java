@@ -48,7 +48,6 @@ public class Utils {
 	public static ServerManager plugin;
 
 	public Utils() {
-		MSG.log("utils initialized");
 	}
 
 	/**

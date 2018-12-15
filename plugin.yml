@@ -1,6 +1,6 @@
 name: ServerManager
 main: org.mswsplex.servermanager.msws.ServerManager
-version: 1.1
+version: 1.1.1
 description: Server Management
 softdepend:
 - Multiverse-Core
