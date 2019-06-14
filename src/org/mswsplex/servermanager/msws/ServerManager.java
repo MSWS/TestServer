@@ -1,18 +1,23 @@
 package org.mswsplex.servermanager.msws;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mswsplex.servermanager.commands.ConfirmCommand;
+import org.mswsplex.servermanager.commands.EnumerateCommand;
 import org.mswsplex.servermanager.commands.FillCommand;
 import org.mswsplex.servermanager.commands.ForcefieldCommand;
 import org.mswsplex.servermanager.commands.GamerulesCommand;
-import org.mswsplex.servermanager.commands.GiveCommand;
+import org.mswsplex.servermanager.commands.GetCommand;
 import org.mswsplex.servermanager.commands.ManageCommand;
 import org.mswsplex.servermanager.commands.TestworldCommand;
+import org.mswsplex.servermanager.customitems.CustomItem;
+import org.mswsplex.servermanager.customitems.EntityMover;
 import org.mswsplex.servermanager.events.Events;
 import org.mswsplex.servermanager.managers.PlayerManager;
 import org.mswsplex.servermanager.utils.MSG;
@@ -25,11 +30,13 @@ public class ServerManager extends JavaPlugin {
 	public File configYml = new File(getDataFolder(), "config.yml"), dataYml = new File(getDataFolder(), "data.yml"),
 			langYml = new File(getDataFolder(), "lang.yml"), guiYml = new File(getDataFolder(), "guis.yml");
 
+	private Map<String, CustomItem> items;
+
 	public void onEnable() {
 		MSG.plugin = this;
 		PlayerManager.plugin = this;
 		Utils.plugin = this;
-		
+
 		if (!configYml.exists())
 			saveResource("config.yml", true);
 		if (!langYml.exists())
@@ -47,7 +54,8 @@ public class ServerManager extends JavaPlugin {
 		new FillCommand(this);
 		new GamerulesCommand(this);
 		new ForcefieldCommand(this);
-		new GiveCommand(this);
+		new EnumerateCommand(this);
+		new GetCommand(this);
 
 		new Events(this);
 
@@ -72,6 +80,17 @@ public class ServerManager extends JavaPlugin {
 
 		if (getMultiverseCore() != null)
 			MSG.log("Multiverse succesfully found");
+
+		items = new HashMap<String, CustomItem>();
+		items.put("entitymover", new EntityMover(this));
+	}
+
+	public CustomItem getItem(String id) {
+		return items.get(id);
+	}
+
+	public Map<String, CustomItem> getItems() {
+		return items;
 	}
 
 	public MultiverseCore getMultiverseCore() {

@@ -154,6 +154,9 @@ public class ManageCommand implements CommandExecutor, TabCompleter {
 			for (String res : Utils.getUnloadedWorlds(false))
 				MSG.tell(sender, res);
 			break;
+		case "short":
+			MSG.tell(sender, MSG.parseDecimal(args[1], 2));
+			break;
 		default:
 			return false;
 		}

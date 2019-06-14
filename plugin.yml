@@ -1,6 +1,6 @@
 name: ServerManager
 main: org.mswsplex.servermanager.msws.ServerManager
-version: 1.1.1
+version: 1.1.2
 description: Server Management
 softdepend:
 - Multiverse-Core
@@ -30,7 +30,8 @@ commands:
   forcefield:
     usage: /<command> <Size>
     description: Toggle forcefield
-  give:
-    usage: /<command> [Item] [Amount] <Player>
-    description: Overkill give command
-    aliases: [g]
+  enumerate:
+    usage: /<command> [Player]
+    aliases: en
+  get:
+    usage: /<command> [Item]

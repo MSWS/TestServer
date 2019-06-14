@@ -456,8 +456,7 @@ public class Utils {
 		Inventory inv = Bukkit.createInventory(null, 3 * 9, "Managing " + titleName);
 		int pos = 10;
 		short damage = 11;
-		//inv.setItem(pos++, quickItem(Material.ENDER_PEARL, "&a&lTeleport To"));
-		inv.setItem(pos++, quickItem(Material.NAME_TAG, "&e&lAssign Custom Name"));
+		inv.setItem(pos++, quickItem(Material.ENDER_PEARL, "&a&lTeleport To"));
 		inv.setItem(pos++, quickItem(Material.FISHING_ROD, "&a&lTeleport To You"));
 		inv.setItem(pos++, quickItem(Material.DIAMOND_SWORD, "&c&lKill"));
 		if (ent instanceof Ageable) {
@@ -766,9 +765,9 @@ public class Utils {
 				lore.add(MSG.color("&7Gamemode: &e" + MSG.camelCase(mode.toString())));
 				if (mode == GameMode.SURVIVAL || mode == GameMode.ADVENTURE)
 					lore.add(MSG.color("&7Food Level: &e" + ((Player) ent).getFoodLevel()));
-				lore.add(MSG.color("&7Is Flying | Can Fly: &e" + MSG.TorF(player.isFlying()) + "&7 | "
-						+ MSG.TorF(player.getAllowFlight())));
-				lore.add(MSG.color("&7IP: &a" + player.getAddress().getHostName()));
+				lore.add(MSG.color("&7Is Flying | Can Fly: &e" + MSG.TorF(((Player) ent).isFlying()) + "&7 | "
+						+ MSG.TorF(((Player) ent).getAllowFlight())));
+				lore.add(MSG.color("&7IP: &a" + ((Player) ent).getAddress().getHostName()));
 
 			}
 
